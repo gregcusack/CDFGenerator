@@ -3,7 +3,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.markers as mrk
 import numpy as np
-from append_files import append_files_into_one
+from append_files import ManageStatistics
 import sys
 
 def run():
@@ -81,14 +81,21 @@ def run():
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    # if len(sys.argv) != 4:
-    #     print("ERROR: Need type, ratio, num_files args")
-    #     sys.exit(-1)
-    # type = sys.argv[1]
-    # ratio = sys.argv[2]
-    # num_files = int(sys.argv[3])
-    # filename_prefix = append_files_into_one(type, ratio, num_files)
+    if len(sys.argv) != 7:
+        print("ERROR: Need type, ratio, num_files args")
+        sys.exit(-1)
+    measurement = sys.argv[1]       # slack/throttles/ooms
+    resource = sys.argv[2]          # cpu/mem
+    ratio = sys.argv[3]             # 0.5x, 1x, 1.5x, etc
+    duration = sys.argv[4]          # 1 min, 2 min, etc
+    system = sys.argv[5]            # DC, K8s, autopilot
+    num_files = int(sys.argv[6])    # files to read in
+
+    manageStats = ManageStatistics(measurement, resource, ratio, duration, system)
+    agg_file_folder = manageStats.aggregate_per_period_to_per_second()
+    manageStats.aggregate_into_one_file(agg_file_folder)
+
     # run(filename_prefix, ratio)
-    run()
+    # run()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
