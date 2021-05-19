@@ -46,10 +46,13 @@ def get_slacks_from_line(line, separator):
     abs_slack = get_absolute_slack(limit, usage)
     if abs_slack < 0:
         print("[ERROR]: abs slack < 0")
+        # abs_slack = get_absolute_slack(limit, usage / 10)
 
     rel_slack = get_relative_slack(limit, usage)
     if rel_slack < 0:
         print("[ERROR]: rel slack < 0")
+        # rel_slack = get_relative_slack(limit, usage / 10)
+
 
     return abs_slack, rel_slack
 
@@ -65,10 +68,10 @@ class ManageStatistics:
         self.measurement = measurement_
         self.resource = resource_
         self.load_type = load_type
-        self.prefix_dc = "/home/greg/Desktop/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
+        self.prefix_dc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
                       self.resource + "/dc/"
 
-        self.prefix_ap = "/home/greg/Desktop/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
+        self.prefix_ap = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
                          self.resource + "/ap/"
         
         self.abs_slack_file = "absolute-slacks.txt"
@@ -125,8 +128,12 @@ class ManageStatistics:
                             absf.write(str(abs_slack) + "\n")
                             relf.write(str(rel_slack) + "\n")
 
-    def remove_low_usage_containers(self):
-        infolder = self.prefix_ap + "raw/"
+    def remove_low_usage_containers(self, system):
+        if system == "ap":
+            infolder = self.prefix_ap + "raw/"
+        else:
+            infolder = self.prefix_dc + "raw/"
+
         outfolder = infolder[:-1] + "-trim/"
         if not os.path.exists(outfolder):
             os.makedirs(outfolder)
@@ -154,9 +161,14 @@ class ManageStatistics:
 
         print("number of files deleted due to low usage (ap): " + str(num_files_to_delete_low_usage))
 
-    def aggregate_into_one_file_autopilot(self):
-        infolder = self.prefix_ap + "raw-trim/"
-        outfolder = self.prefix_ap
+    def aggregate_into_one_file_autopilot(self, system):
+        if system == "ap":
+            infolder = self.prefix_ap + "raw-trim/"
+            outfolder = self.prefix_ap
+        else:
+            infolder = self.prefix_dc + "raw-trim/"
+            outfolder = self.prefix_dc
+
         outfile_abs_slack = outfolder + "absolute-slacks.txt"
         outfile_rel_slack = outfolder + "relative-slacks.txt"
         directory = os.fsencode(infolder)
@@ -169,7 +181,10 @@ class ManageStatistics:
                         for line in aggf:
                             abs_slack, rel_slack = get_slacks_from_line(line, "\t")
                             if abs_slack >= 0:# and abs_slack < 50000:
-                                absf.write(str(abs_slack) + "\n")
+                                if self.resource == "cpu" and abs_slack < 200000:
+                                    absf.write(str(abs_slack) + "\n")
+                                elif self.resource == "mem" and abs_slack < 200000000:
+                                    absf.write(str(abs_slack) + "\n")
                             if rel_slack >= 0:
                                 relf.write(str(rel_slack) + "\n")
 
@@ -178,7 +193,11 @@ class ManageStatistics:
         """ DC ABSOLUTE """
         dc_absolute_slack_path = self.prefix_dc + self.abs_slack_file
         dc_absolute_slack = np.loadtxt(dc_absolute_slack_path)
-        data_sorted_dc_absolute = np.sort(dc_absolute_slack) / 1000 / 1000 / 100  # ns -> us -> ms -> cores
+        data_sorted_dc_absolute = np.sort(dc_absolute_slack)
+        if self.resource == "cpu":
+            data_sorted_dc_absolute = data_sorted_dc_absolute / 1000 / 1000 / 100 # ns -> us -> ms -> cores
+        elif self.resource == "mem":
+            data_sorted_dc_absolute = data_sorted_dc_absolute / 1024 / 1024 # bytes to Mib
         p_dc_absolute = 1. * np.arange(len(dc_absolute_slack)) / (len(dc_absolute_slack) - 1)
 
         """ DC RELATIVE """
@@ -190,7 +209,11 @@ class ManageStatistics:
         """ AP ABSOLUTE """
         ap_absolute_slack_path = self.prefix_ap + self.abs_slack_file
         ap_absolute_slack = np.loadtxt(ap_absolute_slack_path)
-        data_sorted_ap_absolute = np.sort(ap_absolute_slack) / 1000 / 100  # us -> ms -> cores
+        data_sorted_ap_absolute = np.sort(ap_absolute_slack)
+        if self.resource == "cpu":
+            data_sorted_ap_absolute = data_sorted_ap_absolute / 1000 / 100 # us -> ms -> cores
+        elif self.resource == "mem":
+            data_sorted_ap_absolute = data_sorted_ap_absolute / 1024 / 1024 # bytes to MiB
         p_ap_absolute = 1. * np.arange(len(ap_absolute_slack)) / (len(ap_absolute_slack) - 1)
 
         """ AP RELATIVE """
@@ -210,7 +233,11 @@ class ManageStatistics:
         # ax1.plot(data_ml_exact_abs_slack, p_ml_exact_abs_slack, label="ML Ideal", marker='*', markevery=20)
         # ax1.plot(data_ml_conserv_abs_slack, p_ml_conserv_abs_slack, label="ML Conserv.", marker=mrk.TICKRIGHT, markevery=20)
 
-        ax1.set_xlabel('Absolute Slack')
+        if self.resource == "cpu":
+            ax1.set_xlabel('Absolute Slack (cores)')
+        if self.resource == "mem":
+            ax1.set_xlabel('Absolute Slack (MiB)')
+
         ax1.set_ylabel('')
 
         ax2 = fig.add_subplot(212)

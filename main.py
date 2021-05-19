@@ -17,12 +17,20 @@ if __name__ == '__main__':
     manageStats = ManageStatistics(measurement, resource, load_type)
 
     """ DC STUFF """
-    manageStats.aggregate_per_period_to_per_second()
-    manageStats.aggregate_into_one_file()
+    if resource == "cpu":
+        manageStats.aggregate_per_period_to_per_second()
+        manageStats.aggregate_into_one_file()
 
-    """ AUTOPILOT STUFF """
-    manageStats.remove_low_usage_containers()
-    manageStats.aggregate_into_one_file_autopilot()
+        """ AUTOPILOT STUFF """
+        manageStats.remove_low_usage_containers("ap")
+        manageStats.aggregate_into_one_file_autopilot("ap")
+
+    elif resource == "mem":
+        manageStats.remove_low_usage_containers("dc")
+        manageStats.aggregate_into_one_file_autopilot("dc")
+
+        manageStats.remove_low_usage_containers("ap")
+        manageStats.aggregate_into_one_file_autopilot("ap")
 
     """ PLOT """
     manageStats.run()
