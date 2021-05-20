@@ -15,7 +15,10 @@ if __name__ == '__main__':
     load_type = sys.argv[3]         # static, exp, burst
     multiplier = 0
     if len(sys.argv) == 5:
-        multiplier = int(sys.argv[4])
+        try:
+            multiplier = int(sys.argv[4])
+        except:
+            multiplier = float(sys.argv[4])
 
 
     manageStats = ManageStatistics(measurement, resource, load_type, multiplier)
