@@ -171,8 +171,10 @@ class ManageStatistics:
     def remove_low_usage_containers(self, system):
         if system == "ap":
             infolder = self.prefix_ap + "raw/"
-        else:
+        elif system == "static":
             infolder = self.prefix_dc + "raw/"
+        else:
+            infolder = self.prefix_static + "raw/"
 
         outfolder = infolder[:-1] + "-trim/"
         if not os.path.exists(outfolder):
@@ -207,9 +209,12 @@ class ManageStatistics:
         if system == "ap":
             infolder = self.prefix_ap + "raw-trim/"
             outfolder = self.prefix_ap
-        else:
+        elif system == "dc'":
             infolder = self.prefix_dc + "raw-trim/"
             outfolder = self.prefix_dc
+        else:
+            infolder = self.prefix_static + "raw-trim/"
+            outfolder = self.prefix_static
 
         outfile_abs_slack = outfolder + "absolute-slacks.txt"
         outfile_rel_slack = outfolder + "relative-slacks.txt"

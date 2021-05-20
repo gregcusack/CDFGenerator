@@ -32,14 +32,12 @@ if __name__ == '__main__':
             manageStats.aggregate_into_one_file_static()
 
 
-
-
         elif resource == "mem":
             manageStats.remove_low_usage_containers("dc")
             manageStats.aggregate_into_one_file_autopilot("dc")
 
-            manageStats.remove_low_usage_containers("ap")
-            manageStats.aggregate_into_one_file_autopilot("ap")
+            manageStats.remove_low_usage_containers("static")
+            manageStats.aggregate_into_one_file_autopilot("static")
 
         manageStats.run_static()
 
