@@ -19,7 +19,14 @@ def ap_get_usage_limit(line, delimiter):
     if delimiter == "\t":
         return float(stats[0]), float(stats[1])
     else:
-        return float(stats[1]) / 10, float(stats[0])
+        return float(stats[1]), float(stats[0])
+
+def static_get_usage_limit(line, delimiter):
+    stats = line.rstrip().split(delimiter)
+    if delimiter == "\t":
+        return float(stats[0]), float(stats[1])
+    else:
+        return float(stats[1]), float(stats[0])
 
 def aggregate_1s(lines):
     limit_sum = usage_sum = 0
@@ -59,6 +66,22 @@ def get_slacks_from_line(line, separator):
 
     return abs_slack, rel_slack
 
+def get_static_slacks_from_line(line, separator):
+    stats = line.rstrip().split(separator)
+    limit = float(stats[1])
+    usage = float(stats[0])
+
+    abs_slack = get_absolute_slack(limit, usage)
+    if abs_slack < 0:
+        print("[ERROR]: abs slack < 0")
+        # abs_slack = get_absolute_slack(limit, usage / 10)
+
+    rel_slack = get_relative_slack(limit, usage)
+    if rel_slack < 0:
+        print("[ERROR]: rel slack < 0")
+        # rel_slack = get_relative_slack(limit, usage / 10)
+
+    return abs_slack, rel_slack
 
 def return_max_val(prev_max, new_val):
     if new_val > prev_max:
@@ -79,7 +102,7 @@ class ManageStatistics:
             self.prefix_dc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
                              self.resource + "/dc-" + self.multiplier + "/"
 
-            self.prefix_ap = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
+            self.prefix_static = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
                              self.resource + "/static-" + self.multiplier + "/"
 
         else:
@@ -119,10 +142,10 @@ class ManageStatistics:
                             outf.write(str(limit_agg) + "," + str(usage_agg) + "\n")
                             max_usage = return_max_val(max_usage, usage_agg)
                 print("max_usage of file: " + infile + " is: " + str(max_usage))
-                if self.resource == "cpu" and max_usage < 30000000:
-                    print("max usage of container is less than 30% of a core! need to remove")
-                    os.remove(outfile)
-                    num_files_to_delete_low_usage += 1
+                # if self.resource == "cpu" and max_usage < 30000000:
+                #     print("max usage of container is less than 30% of a core! need to remove")
+                #     os.remove(outfile)
+                #     num_files_to_delete_low_usage += 1
 
         print("number of files deleted due to old usage: " + str(num_files_to_delete_low_usage))
 
@@ -155,10 +178,6 @@ class ManageStatistics:
         if not os.path.exists(outfolder):
             os.makedirs(outfolder)
 
-        delimiter = "\t"
-        if self.multiplier != "0":
-            delimiter = ","
-
         num_files_to_delete_low_usage = 0
         directory = os.fsencode(infolder)
         for file in os.listdir(directory):
@@ -171,17 +190,15 @@ class ManageStatistics:
                     with open(infile_full_path, "r") as inf:
                         print('reading in: ' + infile_full_path)
                         for line in inf:
-                            usage, limit = ap_get_usage_limit(line, delimiter)
+                            usage, limit = ap_get_usage_limit(line, "\t")
                             outf.write(str(usage) + "\t" + str(limit) + "\n")
                             max_usage = return_max_val(max_usage, usage)
                 print("max_usage of file: " + infile + " is: " + str(max_usage))
-                min_usage = 30000 # 30000us = 30ms = 30% of core
-                if self.multiplier != "0": # values are in ns, not ms
-                    min_usage = min_usage * 1000
-                if self.resource == "cpu" and max_usage < min_usage: # 30000us = 30ms = 30% of core
-                        print("max usage of container is less than 30% of a core! need to remove")
-                        os.remove(outfile)
-                        num_files_to_delete_low_usage += 1
+                # min_usage = 30000 # 30000us = 30ms = 30% of core
+                # if self.resource == "cpu" and max_usage < min_usage: # 30000us = 30ms = 30% of core
+                #         print("max usage of container is less than 30% of a core! need to remove")
+                #         os.remove(outfile)
+                #         num_files_to_delete_low_usage += 1
 
 
         print("number of files deleted due to low usage (ap): " + str(num_files_to_delete_low_usage))
@@ -206,10 +223,77 @@ class ManageStatistics:
                         for line in aggf:
                             abs_slack, rel_slack = get_slacks_from_line(line, "\t")
                             if abs_slack >= 0:# and abs_slack < 50000:
-                                if self.resource == "cpu" and abs_slack < 200000:
-                                    absf.write(str(abs_slack) + "\n")
-                                elif self.resource == "mem" and abs_slack < 200000000:
-                                    absf.write(str(abs_slack) + "\n")
+                                absf.write(str(abs_slack) + "\n")
+
+                                # if self.resource == "cpu" and abs_slack < 200000:
+                                #     absf.write(str(abs_slack) + "\n")
+                                # elif self.resource == "mem":
+                                #     if abs_slack > 200000000:
+                                #         print("abs slack massive: " + infile_full_path)
+                                #     if abs_slack < 200000000:
+                                #         absf.write(str(abs_slack) + "\n")
+                            if rel_slack >= 0:
+                                relf.write(str(rel_slack) + "\n")
+
+
+    def remove_low_usage_containers_static(self):
+        infolder = self.prefix_static + "raw/"
+        outfolder = infolder[:-1] + "-trim/"
+        if not os.path.exists(outfolder):
+            os.makedirs(outfolder)
+
+        if self.resource == "mem":
+            delimiter = "\t"
+        else:
+            delimiter = ","
+
+        num_files_to_delete_low_usage = 0
+        directory = os.fsencode(infolder)
+        for file in os.listdir(directory):
+            infile = os.fsdecode(file)
+            infile_full_path = infolder + infile
+            if infile_full_path.endswith(".txt"):
+                outfile = outfolder + infile
+                max_usage = 0
+                with open(outfile, "w+") as outf:
+                    with open(infile_full_path, "r") as inf:
+                        print('reading in: ' + infile_full_path)
+                        for line in inf:
+                            usage, limit = static_get_usage_limit(line, delimiter)
+                            outf.write(str(usage) + "\t" + str(limit) + "\n")
+                            max_usage = return_max_val(max_usage, usage)
+                print("max_usage of file: " + infile + " is: " + str(max_usage))
+                # min_usage = 30000 # 30000us = 30ms = 30% of core
+                # if self.resource == "cpu" and max_usage < min_usage: # 30000us = 30ms = 30% of core
+                #         print("max usage of container is less than 30% of a core! need to remove")
+                #         os.remove(outfile)
+                #         num_files_to_delete_low_usage += 1
+
+    def aggregate_into_one_file_static(self):
+        infolder = self.prefix_static + "raw-trim/"
+        outfolder = self.prefix_static
+
+        outfile_abs_slack = outfolder + "absolute-slacks.txt"
+        outfile_rel_slack = outfolder + "relative-slacks.txt"
+        directory = os.fsencode(infolder)
+        with open(outfile_abs_slack, "w+") as absf, open(outfile_rel_slack, "w+") as relf:
+            for file in os.listdir(directory):
+                infile = os.fsdecode(file)
+                infile_full_path = infolder + infile
+                if infile_full_path.endswith(".txt"):
+                    with open(infile_full_path, "r") as aggf:
+                        for line in aggf:
+                            abs_slack, rel_slack = get_static_slacks_from_line(line, "\t")
+                            if abs_slack >= 0:# and abs_slack < 50000:
+                                absf.write(str(abs_slack) + "\n")
+
+                                # if self.resource == "cpu" and abs_slack < 200000:
+                                #     absf.write(str(abs_slack) + "\n")
+                                # elif self.resource == "mem":
+                                #     if abs_slack > 200000000:
+                                #         print("abs slack massive: " + infile_full_path)
+                                #     if abs_slack < 200000000:
+                                #         absf.write(str(abs_slack) + "\n")
                             if rel_slack >= 0:
                                 relf.write(str(rel_slack) + "\n")
 
@@ -287,4 +371,80 @@ class ManageStatistics:
         plt.tight_layout()
         fig.show()
         filename = self.prefix_ap[:-3] + "plot.pdf"
+        fig.savefig(filename)
+
+    def run_static(self):
+
+        """ DC ABSOLUTE """
+        dc_absolute_slack_path = self.prefix_dc + self.abs_slack_file
+        print("dc_abs_slack_file: " + dc_absolute_slack_path)
+        dc_absolute_slack = np.loadtxt(dc_absolute_slack_path)
+        data_sorted_dc_absolute = np.sort(dc_absolute_slack)
+        if self.resource == "cpu":
+            data_sorted_dc_absolute = data_sorted_dc_absolute / 1000 / 1000 / 100 # ns -> us -> ms -> cores
+        elif self.resource == "mem":
+            data_sorted_dc_absolute = data_sorted_dc_absolute / 1024 / 1024 # bytes to Mib
+        p_dc_absolute = 1. * np.arange(len(dc_absolute_slack)) / (len(dc_absolute_slack) - 1)
+
+        """ DC RELATIVE """
+        dc_relative_slack_path = self.prefix_dc + self.rel_slack_file
+        print("dc_rel_slack_file: " + dc_relative_slack_path)
+        dc_relative_slack = np.loadtxt(dc_relative_slack_path)
+        data_sorted_dc_relative = np.sort(dc_relative_slack)  # / 1000 #convert to ms
+        p_dc_relative = 1. * np.arange(len(dc_relative_slack)) / (len(dc_relative_slack) - 1)
+
+        """ STATIC ABSOLUTE """
+        static_absolute_slack_path = self.prefix_static + self.abs_slack_file
+        print("static_abs_slack_file: " + static_absolute_slack_path)
+        static_absolute_slack = np.loadtxt(static_absolute_slack_path)
+        data_sorted_static_absolute = np.sort(static_absolute_slack)
+        if self.resource == "cpu":
+            data_sorted_static_absolute = data_sorted_static_absolute / 1000 / 1000 / 100 # ns -> us -> ms -> cores
+        elif self.resource == "mem":
+            data_sorted_static_absolute = data_sorted_static_absolute / 1024 / 1024 # bytes to MiB
+        p_static_absolute = 1. * np.arange(len(static_absolute_slack)) / (len(static_absolute_slack) - 1)
+
+        """ STATIC RELATIVE """
+        static_relative_slack_path = self.prefix_static + self.rel_slack_file
+        print("static_rel_slack_file: " + static_relative_slack_path)
+        static_relative_slack = np.loadtxt(static_relative_slack_path)
+        data_sorted_static_relative = np.sort(static_relative_slack)  # / 1000 #convert to ms
+        p_static_relative = 1. * np.arange(len(static_relative_slack)) / (len(static_relative_slack) - 1)
+
+
+        fig = plt.figure()
+        # fig, axs = plt.subplot(1, 2)
+        # axs[0,0]
+
+        other_label = "AP"
+        if self.multiplier != "0":
+            other_label = "Static-" + self.multiplier
+
+        ax1 = fig.add_subplot(211)
+        ax1.plot(data_sorted_dc_absolute, p_dc_absolute, label="DC", marker='+', markevery=20)
+        ax1.plot(data_sorted_static_absolute, p_static_absolute, label=other_label, marker='x', markevery=20)
+        # ax1.plot(data_ml_exact_abs_slack, p_ml_exact_abs_slack, label="ML Ideal", marker='*', markevery=20)
+        # ax1.plot(data_ml_conserv_abs_slack, p_ml_conserv_abs_slack, label="ML Conserv.", marker=mrk.TICKRIGHT, markevery=20)
+
+        if self.resource == "cpu":
+            ax1.set_xlabel('Absolute Slack (cores)')
+        if self.resource == "mem":
+            ax1.set_xlabel('Absolute Slack (MiB)')
+
+        ax1.set_ylabel('')
+
+        ax2 = fig.add_subplot(212)
+        ax2.plot(data_sorted_dc_relative, p_dc_relative, label="DC", marker='+', markevery=20)
+        ax2.plot(data_sorted_static_relative, p_static_relative, label=other_label, marker='x', markevery=20)
+        # ax2.plot(data_ml_exact_relative_slack, p_ml_exact_relative_slack, label="ML Ideal", marker='*', markevery=20)
+        # ax2.plot(data_ml_conserv_relative_slack, p_ml_conserv_relative_slacke, label="ML Conserv.", marker=mrk.TICKRIGHT, markevery=20)
+
+        # ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+        ax1.legend()
+
+        ax2.set_xlabel('Relative Slack')
+        ax2.set_ylabel('')
+        plt.tight_layout()
+        fig.show()
+        filename = self.prefix_dc[:-3] + "plot.pdf"
         fig.savefig(filename)

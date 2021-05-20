@@ -20,29 +20,48 @@ if __name__ == '__main__':
 
     manageStats = ManageStatistics(measurement, resource, load_type, multiplier)
 
-    """ DC STUFF """
-    if resource == "cpu":
-        manageStats.aggregate_per_period_to_per_second()
-        manageStats.aggregate_into_one_file()
 
-        print("************** DC DONE *******************")
+    if multiplier != 0:
+        if resource == "cpu":
+            """ DC STUFF """
+            manageStats.aggregate_per_period_to_per_second()
+            manageStats.aggregate_into_one_file()
 
-        """ AUTOPILOT STUFF """
-        manageStats.remove_low_usage_containers("ap")
-        print("************** AP RM LOW USAGE DONE *******************")
+            """ STATIC """
+            manageStats.remove_low_usage_containers_static()
+            manageStats.aggregate_into_one_file_static()
 
 
-        manageStats.aggregate_into_one_file_autopilot("ap")
 
-    elif resource == "mem":
-        manageStats.remove_low_usage_containers("dc")
-        manageStats.aggregate_into_one_file_autopilot("dc")
 
-        manageStats.remove_low_usage_containers("ap")
-        manageStats.aggregate_into_one_file_autopilot("ap")
+        elif resource == "mem":
+            manageStats.remove_low_usage_containers("dc")
+            manageStats.aggregate_into_one_file_autopilot("dc")
 
-    """ PLOT """
-    manageStats.run()
+            manageStats.remove_low_usage_containers("ap")
+            manageStats.aggregate_into_one_file_autopilot("ap")
+
+        manageStats.run_static()
+
+    else:
+        if resource == "cpu":
+            """ DC STUFF """
+            manageStats.aggregate_per_period_to_per_second()
+            manageStats.aggregate_into_one_file()
+
+            """ AUTOPILOT STUFF """
+            manageStats.remove_low_usage_containers("ap")
+            manageStats.aggregate_into_one_file_autopilot("ap")
+
+        elif resource == "mem":
+            manageStats.remove_low_usage_containers("dc")
+            manageStats.aggregate_into_one_file_autopilot("dc")
+
+            manageStats.remove_low_usage_containers("ap")
+            manageStats.aggregate_into_one_file_autopilot("ap")
+
+        """ PLOT """
+        manageStats.run()
 
     # agg_file_folder = manageStats.aggregate_per_period_to_per_second_autopilot()
     # manageStats.aggregate_into_one_file_autopilot(agg_file_folder)
