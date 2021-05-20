@@ -50,6 +50,8 @@ def get_slacks_from_line(line, separator):
         limit = float(stats[0])
         usage = float(stats[1])
 
+    # print(usage, limit)
+
     # limit = float(stats[0])
     # usage = float(stats[1])
     # print(limit, usage)
@@ -171,7 +173,7 @@ class ManageStatistics:
     def remove_low_usage_containers(self, system):
         if system == "ap":
             infolder = self.prefix_ap + "raw/"
-        elif system == "static":
+        elif system == "dc":
             infolder = self.prefix_dc + "raw/"
         else:
             infolder = self.prefix_static + "raw/"
@@ -209,7 +211,7 @@ class ManageStatistics:
         if system == "ap":
             infolder = self.prefix_ap + "raw-trim/"
             outfolder = self.prefix_ap
-        elif system == "dc'":
+        elif system == "dc":
             infolder = self.prefix_dc + "raw-trim/"
             outfolder = self.prefix_dc
         else:
@@ -227,6 +229,8 @@ class ManageStatistics:
                     with open(infile_full_path, "r") as aggf:
                         for line in aggf:
                             abs_slack, rel_slack = get_slacks_from_line(line, "\t")
+                            if abs_slack == 0:
+                                print("abs slack 0: " + infile_full_path)
                             if abs_slack >= 0:# and abs_slack < 50000:
                                 absf.write(str(abs_slack) + "\n")
 
@@ -451,5 +455,5 @@ class ManageStatistics:
         ax2.set_ylabel('')
         plt.tight_layout()
         fig.show()
-        filename = self.prefix_dc[:-3] + "plot.pdf"
+        filename = self.prefix_dc[:-3] + "-plot-" + self.multiplier + "x.pdf"
         fig.savefig(filename)

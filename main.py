@@ -36,6 +36,9 @@ if __name__ == '__main__':
             manageStats.remove_low_usage_containers("dc")
             manageStats.aggregate_into_one_file_autopilot("dc")
 
+            print("################################## DC Stuff DONE #################################")
+
+
             manageStats.remove_low_usage_containers("static")
             manageStats.aggregate_into_one_file_autopilot("static")
 
