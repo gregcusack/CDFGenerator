@@ -144,10 +144,10 @@ class ManageStatistics:
                             outf.write(str(limit_agg) + "," + str(usage_agg) + "\n")
                             max_usage = return_max_val(max_usage, usage_agg)
                 print("max_usage of file: " + infile + " is: " + str(max_usage))
-                # if self.resource == "cpu" and max_usage < 30000000:
-                #     print("max usage of container is less than 30% of a core! need to remove")
-                #     os.remove(outfile)
-                #     num_files_to_delete_low_usage += 1
+                if self.resource == "cpu" and max_usage < 30000000:
+                    print("max usage of container is less than 30% of a core! need to remove")
+                    os.remove(outfile)
+                    num_files_to_delete_low_usage += 1
 
         print("number of files deleted due to old usage: " + str(num_files_to_delete_low_usage))
 
@@ -195,15 +195,26 @@ class ManageStatistics:
                         print('reading in: ' + infile_full_path)
                         for line in inf:
                             usage, limit = ap_get_usage_limit(line, "\t")
+                            # if system == "ap" and self.resource == "cpu":
+                            #     usage = usage / 10
                             outf.write(str(usage) + "\t" + str(limit) + "\n")
                             max_usage = return_max_val(max_usage, usage)
                 print("max_usage of file: " + infile + " is: " + str(max_usage))
-                # min_usage = 30000 # 30000us = 30ms = 30% of core
-                # if self.resource == "cpu" and max_usage < min_usage: # 30000us = 30ms = 30% of core
-                #         print("max usage of container is less than 30% of a core! need to remove")
-                #         os.remove(outfile)
-                #         num_files_to_delete_low_usage += 1
-
+                if self.resource == "cpu":
+                    if system == "ap":
+                        min_usage = 30000 # 30000us = 30ms = 30% of core
+                    else:
+                        min_usage = 30000000  # 30000000ns = 30000us = 30ms = 30% of core
+                    if max_usage < min_usage:
+                        print("max usage of container is less than 30% of a core! need to remove")
+                        os.remove(outfile)
+                        num_files_to_delete_low_usage += 1
+                else:
+                    min_usage = 10000000
+                    if max_usage < min_usage:
+                        print("max usage of container is less than 30% of a core! need to remove")
+                        os.remove(outfile)
+                        num_files_to_delete_low_usage += 1
 
         print("number of files deleted due to low usage (ap): " + str(num_files_to_delete_low_usage))
 
@@ -221,6 +232,7 @@ class ManageStatistics:
         outfile_abs_slack = outfolder + "absolute-slacks.txt"
         outfile_rel_slack = outfolder + "relative-slacks.txt"
         directory = os.fsencode(infolder)
+        ap_large_abs_slacks = []
         with open(outfile_abs_slack, "w+") as absf, open(outfile_rel_slack, "w+") as relf:
             for file in os.listdir(directory):
                 infile = os.fsdecode(file)
@@ -231,16 +243,22 @@ class ManageStatistics:
                             abs_slack, rel_slack = get_slacks_from_line(line, "\t")
                             if abs_slack == 0:
                                 print("abs slack 0: " + infile_full_path)
-                            if abs_slack >= 0:# and abs_slack < 50000:
+                            if system == "ap":
+                                if self.resource == "cpu":
+                                    if abs_slack >= 0 and abs_slack < 500000:
+                                        absf.write(str(abs_slack) + "\n")
+                                    else:
+                                        ap_large_abs_slacks.append(abs_slack)
+                                else:
+                                    print(abs_slack)
+                                    if abs_slack >= 0 and abs_slack < 5000 * 1024 * 1024:
+                                        absf.write(str(abs_slack) + "\n")
+                                    else:
+                                        ap_large_abs_slacks.append(abs_slack)
+
+                            elif abs_slack >= 0:
                                 absf.write(str(abs_slack) + "\n")
 
-                                # if self.resource == "cpu" and abs_slack < 200000:
-                                #     absf.write(str(abs_slack) + "\n")
-                                # elif self.resource == "mem":
-                                #     if abs_slack > 200000000:
-                                #         print("abs slack massive: " + infile_full_path)
-                                #     if abs_slack < 200000000:
-                                #         absf.write(str(abs_slack) + "\n")
                             if rel_slack >= 0:
                                 relf.write(str(rel_slack) + "\n")
 
