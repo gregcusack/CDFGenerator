@@ -14,9 +14,12 @@ def get_relative_slack(limit, usage):
         return -1
     return (limit - usage) / limit
 
-def ap_get_usage_limit(line):
-    stats = line.rstrip().split("\t")
-    return float(stats[0]), float(stats[1])
+def ap_get_usage_limit(line, delimiter):
+    stats = line.rstrip().split(delimiter)
+    if delimiter == "\t":
+        return float(stats[0]), float(stats[1])
+    else:
+        return float(stats[1]) / 10, float(stats[0])
 
 def aggregate_1s(lines):
     limit_sum = usage_sum = 0
@@ -42,7 +45,7 @@ def get_slacks_from_line(line, separator):
 
     # limit = float(stats[0])
     # usage = float(stats[1])
-
+    # print(limit, usage)
     abs_slack = get_absolute_slack(limit, usage)
     if abs_slack < 0:
         print("[ERROR]: abs slack < 0")
@@ -64,15 +67,29 @@ def return_max_val(prev_max, new_val):
 
 
 class ManageStatistics:
-    def __init__(self, measurement_, resource_, load_type):
+    def __init__(self, measurement_, resource_, load_type, multiplier_=0):
         self.measurement = measurement_
         self.resource = resource_
         self.load_type = load_type
-        self.prefix_dc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
-                      self.resource + "/dc/"
+        self.multiplier = str(multiplier_)
+        print("multiplier: " + self.multiplier)
 
-        self.prefix_ap = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
-                         self.resource + "/ap/"
+        if self.multiplier != str(0):
+            print("here")
+            self.prefix_dc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
+                             self.resource + "/dc-" + self.multiplier + "/"
+
+            self.prefix_ap = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
+                             self.resource + "/static-" + self.multiplier + "/"
+
+        else:
+            self.prefix_dc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
+                             self.resource + "/dc/"
+
+            self.prefix_ap = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
+                             self.resource + "/ap/"
+
+
         
         self.abs_slack_file = "absolute-slacks.txt"
         self.rel_slack_file = "relative-slacks.txt"
@@ -138,6 +155,10 @@ class ManageStatistics:
         if not os.path.exists(outfolder):
             os.makedirs(outfolder)
 
+        delimiter = "\t"
+        if self.multiplier != "0":
+            delimiter = ","
+
         num_files_to_delete_low_usage = 0
         directory = os.fsencode(infolder)
         for file in os.listdir(directory):
@@ -150,14 +171,18 @@ class ManageStatistics:
                     with open(infile_full_path, "r") as inf:
                         print('reading in: ' + infile_full_path)
                         for line in inf:
-                            usage, limit = ap_get_usage_limit(line)
+                            usage, limit = ap_get_usage_limit(line, delimiter)
                             outf.write(str(usage) + "\t" + str(limit) + "\n")
                             max_usage = return_max_val(max_usage, usage)
                 print("max_usage of file: " + infile + " is: " + str(max_usage))
-                if self.resource == "cpu" and max_usage < 30000: # 30000us = 30ms = 30% of core
-                    print("max usage of container is less than 30% of a core! need to remove")
-                    os.remove(outfile)
-                    num_files_to_delete_low_usage += 1
+                min_usage = 30000 # 30000us = 30ms = 30% of core
+                if self.multiplier != "0": # values are in ns, not ms
+                    min_usage = min_usage * 1000
+                if self.resource == "cpu" and max_usage < min_usage: # 30000us = 30ms = 30% of core
+                        print("max usage of container is less than 30% of a core! need to remove")
+                        os.remove(outfile)
+                        num_files_to_delete_low_usage += 1
+
 
         print("number of files deleted due to low usage (ap): " + str(num_files_to_delete_low_usage))
 
@@ -192,6 +217,7 @@ class ManageStatistics:
 
         """ DC ABSOLUTE """
         dc_absolute_slack_path = self.prefix_dc + self.abs_slack_file
+        print("dc_abs_slack_file: " + dc_absolute_slack_path)
         dc_absolute_slack = np.loadtxt(dc_absolute_slack_path)
         data_sorted_dc_absolute = np.sort(dc_absolute_slack)
         if self.resource == "cpu":
@@ -202,12 +228,14 @@ class ManageStatistics:
 
         """ DC RELATIVE """
         dc_relative_slack_path = self.prefix_dc + self.rel_slack_file
+        print("dc_rel_slack_file: " + dc_relative_slack_path)
         dc_relative_slack = np.loadtxt(dc_relative_slack_path)
         data_sorted_dc_relative = np.sort(dc_relative_slack)  # / 1000 #convert to ms
         p_dc_relative = 1. * np.arange(len(dc_relative_slack)) / (len(dc_relative_slack) - 1)
 
         """ AP ABSOLUTE """
         ap_absolute_slack_path = self.prefix_ap + self.abs_slack_file
+        print("ap_abs_slack_file: " + ap_absolute_slack_path)
         ap_absolute_slack = np.loadtxt(ap_absolute_slack_path)
         data_sorted_ap_absolute = np.sort(ap_absolute_slack)
         if self.resource == "cpu":
@@ -218,6 +246,7 @@ class ManageStatistics:
 
         """ AP RELATIVE """
         ap_relative_slack_path = self.prefix_ap + self.rel_slack_file
+        print("ap_rel_slack_file: " + ap_relative_slack_path)
         ap_relative_slack = np.loadtxt(ap_relative_slack_path)
         data_sorted_ap_relative = np.sort(ap_relative_slack)  # / 1000 #convert to ms
         p_ap_relative = 1. * np.arange(len(ap_relative_slack)) / (len(ap_relative_slack) - 1)
@@ -227,9 +256,13 @@ class ManageStatistics:
         # fig, axs = plt.subplot(1, 2)
         # axs[0,0]
 
+        other_label = "AP"
+        if self.multiplier != "0":
+            other_label = "Static-" + self.multiplier
+
         ax1 = fig.add_subplot(211)
         ax1.plot(data_sorted_dc_absolute, p_dc_absolute, label="DC", marker='+', markevery=20)
-        ax1.plot(data_sorted_ap_absolute, p_ap_absolute, label="AP", marker='x', markevery=20)
+        ax1.plot(data_sorted_ap_absolute, p_ap_absolute, label=other_label, marker='x', markevery=20)
         # ax1.plot(data_ml_exact_abs_slack, p_ml_exact_abs_slack, label="ML Ideal", marker='*', markevery=20)
         # ax1.plot(data_ml_conserv_abs_slack, p_ml_conserv_abs_slack, label="ML Conserv.", marker=mrk.TICKRIGHT, markevery=20)
 
@@ -242,7 +275,7 @@ class ManageStatistics:
 
         ax2 = fig.add_subplot(212)
         ax2.plot(data_sorted_dc_relative, p_dc_relative, label="DC", marker='+', markevery=20)
-        ax2.plot(data_sorted_ap_relative, p_ap_relative, label="Static", marker='x', markevery=20)
+        ax2.plot(data_sorted_ap_relative, p_ap_relative, label=other_label, marker='x', markevery=20)
         # ax2.plot(data_ml_exact_relative_slack, p_ml_exact_relative_slack, label="ML Ideal", marker='*', markevery=20)
         # ax2.plot(data_ml_conserv_relative_slack, p_ml_conserv_relative_slacke, label="ML Conserv.", marker=mrk.TICKRIGHT, markevery=20)
 
