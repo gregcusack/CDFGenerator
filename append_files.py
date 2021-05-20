@@ -250,7 +250,6 @@ class ManageStatistics:
                                     else:
                                         ap_large_abs_slacks.append(abs_slack)
                                 else:
-                                    print(abs_slack)
                                     if abs_slack >= 0 and abs_slack < 5000 * 1024 * 1024:
                                         absf.write(str(abs_slack) + "\n")
                                     else:
