@@ -92,28 +92,41 @@ def return_max_val(prev_max, new_val):
 
 
 class ManageStatistics:
-    def __init__(self, measurement_, resource_, load_type, multiplier_=0):
+    def __init__(self, service_, measurement_, resource_, load_type, multiplier_=0, rel_slack_="no"):
+        self.service = service_
         self.measurement = measurement_
         self.resource = resource_
         self.load_type = load_type
         self.multiplier = str(multiplier_)
+        self.rel_slack = rel_slack_
+        self.sysname = "Escra"
+
         print("multiplier: " + self.multiplier)
 
-        if self.multiplier != str(0):
-            print("here")
-            self.prefix_dc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
-                             self.resource + "/dc-" + self.multiplier + "/"
+        if self.multiplier == str(-1):
+            multiplier = "1"
+            self.prefix_dc_alloc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+                             self.load_type + "/" + self.resource + "/dc-" + multiplier + "/"
+            self.prefix_static = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+                                 self.load_type + "/" + self.resource + "/static-" + multiplier + "/"
+            self.prefix_dc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+                             self.load_type + "/" + self.resource + "/dc/"
+            self.prefix_ap = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+                             self.load_type + "/" + self.resource + "/ap/"
 
-            self.prefix_static = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
-                             self.resource + "/static-" + self.multiplier + "/"
+        elif self.multiplier != str(0):
+            self.prefix_dc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+                             self.load_type + "/" + self.resource + "/dc-" + self.multiplier + "/"
+
+            self.prefix_static = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+                                 self.load_type + "/" + self.resource + "/static-" + self.multiplier + "/"
 
         else:
-            self.prefix_dc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
-                             self.resource + "/dc/"
+            self.prefix_dc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+                             self.load_type + "/" + self.resource + "/dc/"
 
-            self.prefix_ap = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.load_type + "/" + \
-                             self.resource + "/ap/"
-
+            self.prefix_ap = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+                             self.load_type + "/" + self.resource + "/ap/"
 
         
         self.abs_slack_file = "absolute-slacks.txt"
@@ -371,7 +384,7 @@ class ManageStatistics:
             other_label = "Static-" + self.multiplier
 
         ax1 = fig.add_subplot(211)
-        ax1.plot(data_sorted_dc_absolute, p_dc_absolute, label="DC", marker='+', markevery=20)
+        ax1.plot(data_sorted_dc_absolute, p_dc_absolute, label=self.sysname, marker='+', markevery=20)
         ax1.plot(data_sorted_ap_absolute, p_ap_absolute, label=other_label, marker='x', markevery=20)
         # ax1.plot(data_ml_exact_abs_slack, p_ml_exact_abs_slack, label="ML Ideal", marker='*', markevery=20)
         # ax1.plot(data_ml_conserv_abs_slack, p_ml_conserv_abs_slack, label="ML Conserv.", marker=mrk.TICKRIGHT, markevery=20)
@@ -384,7 +397,7 @@ class ManageStatistics:
         ax1.set_ylabel('')
 
         ax2 = fig.add_subplot(212)
-        ax2.plot(data_sorted_dc_relative, p_dc_relative, label="DC", marker='+', markevery=20)
+        ax2.plot(data_sorted_dc_relative, p_dc_relative, label=self.sysname, marker='+', markevery=20)
         ax2.plot(data_sorted_ap_relative, p_ap_relative, label=other_label, marker='x', markevery=20)
         # ax2.plot(data_ml_exact_relative_slack, p_ml_exact_relative_slack, label="ML Ideal", marker='*', markevery=20)
         # ax2.plot(data_ml_conserv_relative_slack, p_ml_conserv_relative_slacke, label="ML Conserv.", marker=mrk.TICKRIGHT, markevery=20)
@@ -437,40 +450,227 @@ class ManageStatistics:
         data_sorted_static_relative = np.sort(static_relative_slack)  # / 1000 #convert to ms
         p_static_relative = 1. * np.arange(len(static_relative_slack)) / (len(static_relative_slack) - 1)
 
-
-        fig = plt.figure()
-        # fig, axs = plt.subplot(1, 2)
-        # axs[0,0]
-
         other_label = "AP"
+        rm_txt = -3
+        sysname = self.sysname
         if self.multiplier != "0":
-            other_label = "Static-" + self.multiplier
+            if self.multiplier == "75":
+                multiplier = "0.75"
+                rm_txt = -4
+                sysname = sysname + "-0.75x"
+            elif self.multiplier == "1":
+                multiplier = "1.0"
+                rm_txt = -3
+                sysname = sysname + "-1.0x"
+            else:
+                multiplier = self.multiplier
+                rm_txt = -5
+                sysname = sysname + "-1.5x"
+            other_label = "Static-" + multiplier + "x"
 
-        ax1 = fig.add_subplot(211)
-        ax1.plot(data_sorted_dc_absolute, p_dc_absolute, label="DC", marker='+', markevery=20)
-        ax1.plot(data_sorted_static_absolute, p_static_absolute, label=other_label, marker='x', markevery=20)
-        # ax1.plot(data_ml_exact_abs_slack, p_ml_exact_abs_slack, label="ML Ideal", marker='*', markevery=20)
-        # ax1.plot(data_ml_conserv_abs_slack, p_ml_conserv_abs_slack, label="ML Conserv.", marker=mrk.TICKRIGHT, markevery=20)
-
+        xaxis_label = ""
+        marker_freq = 100
         if self.resource == "cpu":
-            ax1.set_xlabel('Absolute Slack (cores)')
+            xaxis_label = "Absolute Slack (cores)"
+            marker_freq = 200
         if self.resource == "mem":
-            ax1.set_xlabel('Absolute Slack (MiB)')
+            xaxis_label = "Absolute Slack (MiB)"
+            marker_freq = 75
 
-        ax1.set_ylabel('')
 
-        ax2 = fig.add_subplot(212)
-        ax2.plot(data_sorted_dc_relative, p_dc_relative, label="DC", marker='+', markevery=20)
-        ax2.plot(data_sorted_static_relative, p_static_relative, label=other_label, marker='x', markevery=20)
-        # ax2.plot(data_ml_exact_relative_slack, p_ml_exact_relative_slack, label="ML Ideal", marker='*', markevery=20)
-        # ax2.plot(data_ml_conserv_relative_slack, p_ml_conserv_relative_slacke, label="ML Conserv.", marker=mrk.TICKRIGHT, markevery=20)
+        if self.rel_slack == "yes":
+            fig = plt.figure()
+            # fig, axs = plt.subplot(1, 2)
+            # axs[0,0]
 
-        # ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-        ax1.legend()
+            ax1 = fig.add_subplot(211)
+            ax1.plot(data_sorted_dc_absolute, p_dc_absolute, label=sysname, marker='+', markevery=marker_freq)
+            ax1.plot(data_sorted_static_absolute, p_static_absolute, label=other_label, marker='x', markevery=marker_freq)
+            # ax1.plot(data_ml_exact_abs_slack, p_ml_exact_abs_slack, label="ML Ideal", marker='*', markevery=20)
+            # ax1.plot(data_ml_conserv_abs_slack, p_ml_conserv_abs_slack, label="ML Conserv.", marker=mrk.TICKRIGHT, markevery=20)
 
-        ax2.set_xlabel('Relative Slack')
-        ax2.set_ylabel('')
-        plt.tight_layout()
+            ax1.set_xlabel(xaxis_label)
+
+            ax1.set_ylabel('')
+
+            ax2 = fig.add_subplot(212)
+            ax2.plot(data_sorted_dc_relative, p_dc_relative, label=sysname, marker='+', markevery=marker_freq)
+            ax2.plot(data_sorted_static_relative, p_static_relative, label=other_label, marker='x', markevery=marker_freq)
+            # ax2.plot(data_ml_exact_relative_slack, p_ml_exact_relative_slack, label="ML Ideal", marker='*', markevery=20)
+            # ax2.plot(data_ml_conserv_relative_slack, p_ml_conserv_relative_slacke, label="ML Conserv.", marker=mrk.TICKRIGHT, markevery=20)
+
+            # ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+            ax1.legend()
+
+            ax2.set_xlabel('Relative Slack')
+            ax2.set_ylabel('')
+            plt.tight_layout()
+
+        else:
+            fig, ax = plt.subplots(figsize=(5,3))
+            ax.plot(data_sorted_dc_absolute, p_dc_absolute, label=sysname, marker='+', markevery=marker_freq)
+            ax.plot(data_sorted_static_absolute, p_static_absolute, label=other_label, marker='x', markevery=marker_freq)
+            ax.set_xlabel(xaxis_label)
+            ax.set_ylabel('')
+            plt.tight_layout()
+            ax.legend(title=self.load_type.capitalize() + " Workload")
+
+
         fig.show()
-        filename = self.prefix_dc[:-3] + "-plot-" + self.multiplier + "x.pdf"
+
+        filename = self.prefix_dc[:rm_txt] + "-plot-" + self.resource + "-" + self.multiplier + "x.pdf"
         fig.savefig(filename)
+        filename = self.prefix_dc[:rm_txt] + "-plot-" + self.resource + "-" + self.multiplier + "x.png"
+        fig.savefig(filename)
+
+
+    def run_all(self):
+
+        """ DC ABSOLUTE ALLOC """
+        dc_absolute_slack_path_alloc = self.prefix_dc_alloc + self.abs_slack_file
+        print("dc_abs_slack_file: " + dc_absolute_slack_path_alloc)
+        dc_absolute_slack_alloc = np.loadtxt(dc_absolute_slack_path_alloc)
+        data_sorted_dc_absolute_alloc = np.sort(dc_absolute_slack_alloc)
+        if self.resource == "cpu":
+            data_sorted_dc_absolute_alloc = data_sorted_dc_absolute_alloc / 1000 / 1000 / 100 # ns -> us -> ms -> cores
+        elif self.resource == "mem":
+            data_sorted_dc_absolute_alloc = data_sorted_dc_absolute_alloc / 1024 / 1024 # bytes to Mib
+        p_dc_absolute_alloc = 1. * np.arange(len(dc_absolute_slack_alloc)) / (len(dc_absolute_slack_alloc) - 1)
+
+        """ DC RELATIVE ALLOC """
+        dc_relative_slack_path_alloc = self.prefix_dc_alloc + self.rel_slack_file
+        print("dc_rel_slack_file: " + dc_relative_slack_path_alloc)
+        dc_relative_slack_alloc = np.loadtxt(dc_relative_slack_path_alloc)
+        data_sorted_dc_relative_alloc = np.sort(dc_relative_slack_alloc)  # / 1000 #convert to ms
+        p_dc_relative_alloc = 1. * np.arange(len(dc_relative_slack_alloc)) / (len(dc_relative_slack_alloc) - 1)
+
+        """ STATIC ABSOLUTE """
+        static_absolute_slack_path = self.prefix_static + self.abs_slack_file
+        print("static_abs_slack_file: " + static_absolute_slack_path)
+        static_absolute_slack = np.loadtxt(static_absolute_slack_path)
+        data_sorted_static_absolute = np.sort(static_absolute_slack)
+        if self.resource == "cpu":
+            data_sorted_static_absolute = data_sorted_static_absolute / 1000 / 1000 / 100 # ns -> us -> ms -> cores
+        elif self.resource == "mem":
+            data_sorted_static_absolute = data_sorted_static_absolute / 1024 / 1024 # bytes to MiB
+        p_static_absolute = 1. * np.arange(len(static_absolute_slack)) / (len(static_absolute_slack) - 1)
+
+        """ STATIC RELATIVE """
+        static_relative_slack_path = self.prefix_static + self.rel_slack_file
+        print("static_rel_slack_file: " + static_relative_slack_path)
+        static_relative_slack = np.loadtxt(static_relative_slack_path)
+        data_sorted_static_relative = np.sort(static_relative_slack)  # / 1000 #convert to ms
+        p_static_relative = 1. * np.arange(len(static_relative_slack)) / (len(static_relative_slack) - 1)
+
+        """ AP ABSOLUTE """
+        ap_absolute_slack_path = self.prefix_ap + self.abs_slack_file
+        print("ap_abs_slack_file: " + ap_absolute_slack_path)
+        ap_absolute_slack = np.loadtxt(ap_absolute_slack_path)
+        data_sorted_ap_absolute = np.sort(ap_absolute_slack)
+        if self.resource == "cpu":
+            data_sorted_ap_absolute = data_sorted_ap_absolute / 1000 / 100  # us -> ms -> cores
+        elif self.resource == "mem":
+            data_sorted_ap_absolute = data_sorted_ap_absolute / 1024 / 1024  # bytes to MiB
+        p_ap_absolute = 1. * np.arange(len(ap_absolute_slack)) / (len(ap_absolute_slack) - 1)
+
+        """ AP RELATIVE """
+        ap_relative_slack_path = self.prefix_ap + self.rel_slack_file
+        print("ap_rel_slack_file: " + ap_relative_slack_path)
+        ap_relative_slack = np.loadtxt(ap_relative_slack_path)
+        data_sorted_ap_relative = np.sort(ap_relative_slack)  # / 1000 #convert to ms
+        p_ap_relative = 1. * np.arange(len(ap_relative_slack)) / (len(ap_relative_slack) - 1)
+
+        """ DC ABSOLUTE """
+        dc_absolute_slack_path = self.prefix_dc + self.abs_slack_file
+        print("dc_abs_slack_file: " + dc_absolute_slack_path)
+        dc_absolute_slack = np.loadtxt(dc_absolute_slack_path)
+        data_sorted_dc_absolute = np.sort(dc_absolute_slack)
+        if self.resource == "cpu":
+            data_sorted_dc_absolute = data_sorted_dc_absolute / 1000 / 1000 / 100 # ns -> us -> ms -> cores
+        elif self.resource == "mem":
+            data_sorted_dc_absolute = data_sorted_dc_absolute / 1024 / 1024 # bytes to Mib
+        p_dc_absolute = 1. * np.arange(len(dc_absolute_slack)) / (len(dc_absolute_slack) - 1)
+
+        """ DC RELATIVE """
+        dc_relative_slack_path = self.prefix_dc + self.rel_slack_file
+        print("dc_rel_slack_file: " + dc_relative_slack_path)
+        dc_relative_slack = np.loadtxt(dc_relative_slack_path)
+        data_sorted_dc_relative = np.sort(dc_relative_slack)  # / 1000 #convert to ms
+        p_dc_relative = 1. * np.arange(len(dc_relative_slack)) / (len(dc_relative_slack) - 1)
+
+        xaxis_label = ""
+        marker_freq = 100
+        if self.resource == "cpu":
+            xaxis_label = "Absolute Slack (cores)"
+            marker_freq = 200
+            marker_freq_dc = marker_freq * 4
+            market_freq_dc_limit = marker_freq * 4
+            marker_freq_ap = 100
+        if self.resource == "mem":
+            xaxis_label = "Absolute Slack (MiB)"
+            marker_freq = 200
+            marker_freq_dc = 100
+            market_freq_dc_limit = marker_freq
+            marker_freq_ap = 100
+
+        if self.rel_slack == "yes":
+            fig = plt.figure()
+            # fig, axs = plt.subplot(1, 2)
+            # axs[0,0]
+
+            ax1 = fig.add_subplot(211)
+            ax1.plot(data_sorted_dc_absolute_alloc, p_dc_absolute_alloc, label=self.sysname + "-1.0x", marker='*',
+                     markevery=marker_freq_dc)
+            ax1.plot(data_sorted_ap_absolute, p_ap_absolute, label="Autopilot", marker=mrk.TICKRIGHT,
+                     markevery=marker_freq)
+            ax1.plot(data_sorted_dc_absolute, p_dc_absolute, label=self.sysname + "-nolimit", marker='+',
+                     markevery=marker_freq)
+            ax1.plot(data_sorted_static_absolute, p_static_absolute, label="Static-1.0x", marker='x',
+                     markevery=marker_freq)
+
+            ax1.set_xlabel(xaxis_label)
+
+            ax1.set_ylabel('')
+
+            ax2 = fig.add_subplot(212)
+            ax2.plot(data_sorted_dc_relative_alloc, p_dc_relative_alloc, label=self.sysname + "-1.0x", marker='*',
+                     markevery=marker_freq)
+            ax2.plot(data_sorted_ap_relative, p_ap_relative, label="Autopilot", marker=mrk.TICKRIGHT,
+                     markevery=marker_freq)
+            ax2.plot(data_sorted_dc_relative, p_dc_relative, label=self.sysname + "-nolimit", marker='+', markevery=marker_freq)
+            ax2.plot(data_sorted_static_relative, p_static_relative, label="Static-1.0x", marker='x', markevery=marker_freq)
+
+            # ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+            ax1.legend()
+
+            ax2.set_xlabel('Relative Slack')
+            ax2.set_ylabel('')
+            plt.tight_layout()
+
+        else:
+            fig, ax = plt.subplots(figsize=(5,3))
+            if self.resource == "cpu":
+                ax.set_xlim([-.25,4])
+            ax.plot(data_sorted_dc_absolute_alloc, p_dc_absolute_alloc, label=self.sysname + "-1.0x", marker='*',
+                    markevery=market_freq_dc_limit)
+            ax.plot(data_sorted_dc_absolute, p_dc_absolute, label=self.sysname + "-nolimit", marker='+',
+                    markevery=marker_freq_dc)
+            ax.plot(data_sorted_ap_absolute, p_ap_absolute, label="Autopilot", marker=mrk.TICKRIGHT,
+                    markevery=marker_freq_ap)
+            ax.plot(data_sorted_static_absolute, p_static_absolute, label="Static-1.0x", marker='x', markevery=marker_freq)
+
+
+
+            ax.set_xlabel(xaxis_label)
+            ax.set_ylabel('')
+            plt.tight_layout()
+            ax.legend(title=self.load_type.capitalize() + " Workload")
+
+
+        fig.show()
+
+        filename = self.prefix_dc[:-1] + "-plot-" + self.load_type + "-" + self.resource + "-DC-AP-Static" + ".pdf"
+        fig.savefig(filename)
+        filename = self.prefix_dc[:-1] + "-plot-" + self.load_type + "-" + self.resource + "-DC-AP-Static" + ".png"
+        fig.savefig(filename)
+
