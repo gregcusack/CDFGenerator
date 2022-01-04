@@ -1,8 +1,9 @@
-import os
+import os, sys
 from itertools import islice
 import matplotlib.pyplot as plt
 import matplotlib.markers as mrk
 import numpy as np
+np.set_printoptions(threshold=sys.maxsize)
 
 def get_absolute_slack(limit, usage):
     return limit - usage
@@ -103,29 +104,32 @@ class ManageStatistics:
 
         print("multiplier: " + self.multiplier)
 
+        # base = "/home/greg/"
+        base = "/Users/gcusack/Desktop/"
+
         if self.multiplier == str(-1):
-            multiplier = "1"
-            self.prefix_dc_alloc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+            multiplier = "1.5"
+            self.prefix_dc_alloc = base + "CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
                              self.load_type + "/" + self.resource + "/dc-" + multiplier + "/"
-            self.prefix_static = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+            self.prefix_static = base + "CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
                                  self.load_type + "/" + self.resource + "/static-" + multiplier + "/"
-            self.prefix_dc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+            self.prefix_dc = base + "CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
                              self.load_type + "/" + self.resource + "/dc/"
-            self.prefix_ap = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+            self.prefix_ap = base + "CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
                              self.load_type + "/" + self.resource + "/ap/"
 
         elif self.multiplier != str(0):
-            self.prefix_dc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+            self.prefix_dc = base + "CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
                              self.load_type + "/" + self.resource + "/dc-" + self.multiplier + "/"
 
-            self.prefix_static = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+            self.prefix_static = base + "CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
                                  self.load_type + "/" + self.resource + "/static-" + self.multiplier + "/"
 
         else:
-            self.prefix_dc = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+            self.prefix_dc = base + "CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
                              self.load_type + "/" + self.resource + "/dc/"
 
-            self.prefix_ap = "/home/greg/CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
+            self.prefix_ap = base + "CDFGenerator/data/" + self.measurement + "/" + self.service + "/" + \
                              self.load_type + "/" + self.resource + "/ap/"
 
         
@@ -603,7 +607,7 @@ class ManageStatistics:
         if self.resource == "cpu":
             xaxis_label = "Absolute Slack (cores)"
             marker_freq = 200
-            marker_freq_dc = marker_freq * 4
+            marker_freq_dc = marker_freq * 10
             market_freq_dc_limit = marker_freq * 4
             marker_freq_ap = 100
         if self.resource == "mem":
@@ -651,13 +655,50 @@ class ManageStatistics:
             fig, ax = plt.subplots(figsize=(5,3))
             if self.resource == "cpu":
                 ax.set_xlim([-.25,4])
-            ax.plot(data_sorted_dc_absolute_alloc, p_dc_absolute_alloc, label=self.sysname + "-1.0x", marker='*',
-                    markevery=market_freq_dc_limit)
-            ax.plot(data_sorted_dc_absolute, p_dc_absolute, label=self.sysname + "-nolimit", marker='+',
+            # ax.plot(data_sorted_dc_absolute_alloc, p_dc_absolute_alloc, label=self.sysname + "-1.0x", marker='*',
+            #         markevery=market_freq_dc_limit)
+            ax.plot(data_sorted_dc_absolute, p_dc_absolute, label=self.sysname, marker='+',
                     markevery=marker_freq_dc)
             ax.plot(data_sorted_ap_absolute, p_ap_absolute, label="Autopilot", marker=mrk.TICKRIGHT,
                     markevery=marker_freq_ap)
-            ax.plot(data_sorted_static_absolute, p_static_absolute, label="Static-1.0x", marker='x', markevery=marker_freq)
+            ax.plot(data_sorted_static_absolute, p_static_absolute, label="Static", marker='x', markevery=marker_freq)
+
+            # print(p_dc_absolute)
+            count_dc = 0
+            count_ap = 0
+            count_static = 0
+            val = .70
+            val_up = val + .005
+            print("-----------------")
+            for i in p_dc_absolute:
+                if i > val and i < val_up:
+                    print(count_dc)
+                    break
+                count_dc += 1
+
+            print("%%%%%%%%%%%%%%%")
+            for i in p_ap_absolute:
+                if i > val and i < val_up:
+                    print(count_ap)
+                    break
+                count_ap += 1
+            print("##############")
+            for i in p_static_absolute:
+                if i > val and i < val_up:
+                    print(count_static)
+                    break
+                count_static += 1
+
+            dc = data_sorted_dc_absolute[count_dc]
+            ap = data_sorted_ap_absolute[count_ap]
+            static = data_sorted_static_absolute[count_static]
+            print(data_sorted_dc_absolute[count_dc])
+            print(data_sorted_ap_absolute[count_ap])
+            print(data_sorted_static_absolute[count_static])
+
+            out_x = ap/dc
+            out_per = (ap - dc) / ap
+            print(out_per, out_x)
 
 
 
