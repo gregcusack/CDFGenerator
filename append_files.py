@@ -16,14 +16,26 @@ def get_relative_slack(limit, usage):
     return (limit - usage) / limit
 
 def ap_get_usage_limit(line, delimiter):
-    stats = line.rstrip().split(delimiter)
+    if "\t" in line:
+        stats = line.rstrip().split("\t")
+        delimiter = "\t"
+    else:
+        stats = line.rstrip().split(",")
+        delimiter = ","
+
     if delimiter == "\t":
         return float(stats[0]), float(stats[1])
     else:
         return float(stats[1]), float(stats[0])
 
 def static_get_usage_limit(line, delimiter):
-    stats = line.rstrip().split(delimiter)
+    if "\t" in line:
+        stats = line.rstrip().split("\t")
+        delimiter = "\t"
+    else:
+        stats = line.rstrip().split(",")
+        delimiter = ","
+
     if delimiter == "\t":
         return float(stats[0]), float(stats[1])
     else:
@@ -104,8 +116,8 @@ class ManageStatistics:
 
         print("multiplier: " + self.multiplier)
 
-        # base = "/home/greg/"
-        base = "/Users/gcusack/Desktop/"
+        base = "/home/greg/Desktop/"
+        # base = "/Users/gcusack/Desktop/"
 
         if self.multiplier == str(-1):
             multiplier = "1.5"
@@ -305,7 +317,7 @@ class ManageStatistics:
                             usage, limit = static_get_usage_limit(line, delimiter)
                             outf.write(str(usage) + "\t" + str(limit) + "\n")
                             max_usage = return_max_val(max_usage, usage)
-                print("max_usage of file: " + infile + " is: " + str(max_usage))
+                print("max_usage of file: " + infile + " is: " + str(max_usage/100000) + " cores")
                 # min_usage = 30000 # 30000us = 30ms = 30% of core
                 # if self.resource == "cpu" and max_usage < min_usage: # 30000us = 30ms = 30% of core
                 #         print("max usage of container is less than 30% of a core! need to remove")
@@ -327,6 +339,7 @@ class ManageStatistics:
                     with open(infile_full_path, "r") as aggf:
                         for line in aggf:
                             abs_slack, rel_slack = get_static_slacks_from_line(line, "\t")
+                            print("abs slack: " + str(abs_slack))
                             if abs_slack >= 0:# and abs_slack < 50000:
                                 absf.write(str(abs_slack) + "\n")
 
@@ -442,7 +455,7 @@ class ManageStatistics:
         static_absolute_slack = np.loadtxt(static_absolute_slack_path)
         data_sorted_static_absolute = np.sort(static_absolute_slack)
         if self.resource == "cpu":
-            data_sorted_static_absolute = data_sorted_static_absolute / 1000 / 1000 / 100 # ns -> us -> ms -> cores
+            data_sorted_static_absolute = data_sorted_static_absolute / 1000 / 100 # us -> ms -> cores
         elif self.resource == "mem":
             data_sorted_static_absolute = data_sorted_static_absolute / 1024 / 1024 # bytes to MiB
         p_static_absolute = 1. * np.arange(len(static_absolute_slack)) / (len(static_absolute_slack) - 1)
@@ -554,7 +567,8 @@ class ManageStatistics:
         static_absolute_slack = np.loadtxt(static_absolute_slack_path)
         data_sorted_static_absolute = np.sort(static_absolute_slack)
         if self.resource == "cpu":
-            data_sorted_static_absolute = data_sorted_static_absolute / 1000 / 1000 / 100 # ns -> us -> ms -> cores
+            data_sorted_static_absolute = data_sorted_static_absolute / 1000 / 100 # us -> ms -> cores
+            print(data_sorted_static_absolute)
         elif self.resource == "mem":
             data_sorted_static_absolute = data_sorted_static_absolute / 1024 / 1024 # bytes to MiB
         p_static_absolute = 1. * np.arange(len(static_absolute_slack)) / (len(static_absolute_slack) - 1)
