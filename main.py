@@ -7,20 +7,26 @@ import sys
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    if len(sys.argv) <= 5:
+    if len(sys.argv) <= 3:
         print("ERROR: Need type, ratio, num_files args")
         sys.exit(-1)
     service = sys.argv[1]
     measurement = sys.argv[2]       # slack/throttles/ooms
     resource = sys.argv[3]          # cpu/mem
-    load_type = sys.argv[4]         # static, exp, burst
-    rel_slack = sys.argv[5]
-    multiplier = 0
-    if len(sys.argv) == 7:
-        try:
-            multiplier = int(sys.argv[6])
-        except:
-            multiplier = float(sys.argv[6])
+
+    if len(sys.argv) > 4:
+        load_type = sys.argv[4]         # static, exp, burst
+        rel_slack = sys.argv[5]
+        multiplier = 0
+        if len(sys.argv) == 7:
+            try:
+                multiplier = int(sys.argv[6])
+            except:
+                multiplier = float(sys.argv[6])
+    else:
+        load_type = ""
+        multiplier = 0
+        rel_slack = ""
 
 
     manageStats = ManageStatistics(service, measurement, resource, load_type, multiplier, rel_slack)
@@ -51,6 +57,30 @@ if __name__ == '__main__':
             manageStats.aggregate_into_one_file_autopilot("static")
 
         manageStats.run_static()
+
+    elif service == "grid-search":
+        if resource == "cpu":
+            """ DC STUFF """
+            manageStats.remove_low_usage_containers("dc-serverless")
+            manageStats.aggregate_into_one_file_autopilot("dc-serverless")
+        #
+        #     """ VANILLA STUFF """
+            manageStats.remove_low_usage_containers("vanilla")
+            manageStats.aggregate_into_one_file_autopilot("vanilla")
+        #
+        elif resource == "mem":
+            manageStats.remove_low_usage_containers("dc-serverless")
+            manageStats.aggregate_into_one_file_autopilot("dc-serverless")
+
+            print("################################## DC Stuff DONE #################################")
+
+            manageStats.remove_low_usage_containers("vanilla")
+            manageStats.aggregate_into_one_file_autopilot("vanilla")
+
+        """ PLOT """
+        manageStats.run()
+
+
 
     else:
         if resource == "cpu":
