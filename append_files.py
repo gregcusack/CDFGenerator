@@ -396,6 +396,7 @@ class ManageStatistics:
         # fig, axs = plt.subplot(1, 2)
         # axs[0,0]
 
+
         other_label = "AP"
         if self.multiplier != "0":
             other_label = "Static-" + self.multiplier
@@ -418,6 +419,9 @@ class ManageStatistics:
         ax2.plot(data_sorted_ap_relative, p_ap_relative, label=other_label, marker='x', markevery=20)
         # ax2.plot(data_ml_exact_relative_slack, p_ml_exact_relative_slack, label="ML Ideal", marker='*', markevery=20)
         # ax2.plot(data_ml_conserv_relative_slack, p_ml_conserv_relative_slacke, label="ML Conserv.", marker=mrk.TICKRIGHT, markevery=20)
+
+        # if self.resource == "mem":
+        #     ax1.set_xlim([98, 103])
 
         # ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
         ax1.legend()
