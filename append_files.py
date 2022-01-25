@@ -219,7 +219,7 @@ class ManageStatistics:
         num_files_to_delete_low_usage = 0
         count_files = 0
         for i in range(3):
-            infolder = infolders + str(i + 2) + "/" + self.resource + "/"
+            infolder = infolders + str(i + 2) + "/" + self.resource + "_limits/"
 
             directory = os.fsencode(infolder)
             for file in os.listdir(directory):
@@ -436,8 +436,10 @@ class ManageStatistics:
         # ax2.set_ylabel('')
         plt.tight_layout()
         fig.show()
-        filename = self.prefix_vanilla[:-3] + "plot.pdf"
+        filename = self.prefix_vanilla[:-3] + "-plot.pdf"
+        file_2 = self.prefix_vanilla[:-3] + "-plot.png"
         fig.savefig(filename)
+        fig.savefig(file_2)
 
     def run_static(self):
 
