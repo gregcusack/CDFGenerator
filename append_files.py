@@ -71,6 +71,8 @@ def get_slacks_from_line(line, separator):
     abs_slack = get_absolute_slack(limit, usage)
     if abs_slack < 0:
         print("[ERROR]: abs slack < 0")
+        print("usage, limit: " + str(usage) + ", " + str(limit))
+        # abs_slack = 0.0
         # abs_slack = get_absolute_slack(limit, usage / 10)
 
     rel_slack = get_relative_slack(limit, usage)
@@ -122,6 +124,11 @@ class ManageStatistics:
         if self.service == "grid-search":
             self.prefix_dc = base + "CDFGenerator/data/" + self.measurement + "/" + self.service + "/dc/"
             self.prefix_vanilla = base + "CDFGenerator/data/" + self.measurement + "/" + self.service + "/vanilla/"
+
+        elif self.service == "image-proc":
+            self.prefix_dc = base + "CDFGenerator/data/" + self.measurement + "/" + self.service + "/dc/"
+            self.prefix_vanilla = base + "CDFGenerator/data/" + self.measurement + "/" + self.service + "/vanilla/"
+
 
         elif self.multiplier == str(-1):
             multiplier = "1.5"
@@ -218,14 +225,22 @@ class ManageStatistics:
 
         num_files_to_delete_low_usage = 0
         count_files = 0
-        for i in range(3):
+        num_data_files = 0
+        if self.service == "grid-search":
+            num_data_files = 3
+        else:
+            num_data_files = 1
+        for i in range(num_data_files):
             infolder = infolders + str(i + 2) + "/" + self.resource + "_limits/"
+            print("in folder: " + infolder)
 
             directory = os.fsencode(infolder)
             for file in os.listdir(directory):
                 infile = os.fsdecode(file)
                 infile_full_path = infolder + infile
-                if infile_full_path.endswith(".txt"):
+                print("infile_full_path: " + infile_full_path)
+                if infile.startswith("limit_wsko") and infile_full_path.endswith(".txt"):
+                    print("suuuuhhhh")
                     outfile = outfolder + infile[:-4] + str(count_files) + ".txt"
                     max_usage = 0
                     with open(outfile, "w+") as outf:

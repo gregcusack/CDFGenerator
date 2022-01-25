@@ -80,6 +80,27 @@ if __name__ == '__main__':
         """ PLOT """
         manageStats.run()
 
+    elif service == "image-proc":
+        if resource == "cpu":
+            """ DC STUFF """
+            manageStats.remove_low_usage_containers("dc-serverless")
+            manageStats.aggregate_into_one_file_autopilot("dc-serverless")
+        #
+        #     """ VANILLA STUFF """
+            manageStats.remove_low_usage_containers("vanilla")
+            manageStats.aggregate_into_one_file_autopilot("vanilla")
+        #
+        elif resource == "mem":
+            manageStats.remove_low_usage_containers("dc-serverless")
+            manageStats.aggregate_into_one_file_autopilot("dc-serverless")
+
+            print("################################## DC Stuff DONE #################################")
+
+            manageStats.remove_low_usage_containers("vanilla")
+            manageStats.aggregate_into_one_file_autopilot("vanilla")
+
+        """ PLOT """
+        manageStats.run()
 
 
     else:
