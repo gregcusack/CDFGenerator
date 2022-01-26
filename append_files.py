@@ -229,7 +229,7 @@ class ManageStatistics:
         if self.service == "grid-search":
             num_data_files = 3
         else:
-            num_data_files = 1
+            num_data_files = 4
         for i in range(num_data_files):
             infolder = infolders + str(i + 2) + "/" + self.resource + "_limits/"
             print("in folder: " + infolder)
@@ -433,8 +433,8 @@ class ManageStatistics:
             other_label = "Static-" + self.multiplier
 
         ax1 = fig.add_subplot(111)
-        ax1.plot(data_sorted_dc_absolute, p_dc_absolute, label=self.sysname + " w/ Openwhisk", marker='+', markevery=400)
-        ax1.plot(data_sorted_ap_absolute, p_ap_absolute, label=other_label, marker='x', markevery=400)
+        ax1.plot(data_sorted_dc_absolute, p_dc_absolute, label=self.sysname + " w/ Openwhisk", marker='+')#, markevery=400)
+        ax1.plot(data_sorted_ap_absolute, p_ap_absolute, label=other_label, marker='x')#, markevery=400)
         # ax1.plot(data_ml_exact_abs_slack, p_ml_exact_abs_slack, label="ML Ideal", marker='*', markevery=20)
         # ax1.plot(data_ml_conserv_abs_slack, p_ml_conserv_abs_slack, label="ML Conserv.", marker=mrk.TICKRIGHT, markevery=20)
 
