@@ -10,7 +10,7 @@ multipler=$5
 
 path="/home/greg/Desktop/CDFGenerator/data/slack/${namespace}/${workload}/${resource}/${system}-${multipler}/raw/"
 mkdir -p ${path}
-
+echo $path
 
 if [ $system == "dc" ] && [ $resource == "cpu" ]; then 
 	scp gcusack@c220g5-111019.wisc.cloudlab.us:/mydata/ec/Distributed-Containers/ec_gcm/logs/*.txt ${path}
