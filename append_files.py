@@ -239,7 +239,12 @@ class ManageStatistics:
                 infile = os.fsdecode(file)
                 infile_full_path = infolder + infile
                 print("infile_full_path: " + infile_full_path)
-                if infile.startswith("limit_wsko") and infile_full_path.endswith(".txt"):
+                starts_with = ""
+                if self.resource == "cpu":
+                    starts_with = "limit_wsko"
+                else:
+                    starts_with = "mem_limit_wsko"
+                if infile.startswith(starts_with) and infile_full_path.endswith(".txt"):
                     print("suuuuhhhh")
                     outfile = outfolder + infile[:-4] + str(count_files) + ".txt"
                     max_usage = 0
@@ -248,9 +253,9 @@ class ManageStatistics:
                             print('reading in: ' + infile_full_path)
                             for line in inf:
                                 usage, limit = ap_get_usage_limit(line, "\t")
-                                if str(usage) != "0.0":
-                                    outf.write(str(usage) + "\t" + str(limit) + "\n")
-                                    max_usage = return_max_val(max_usage, usage)
+                                # if str(usage) != "0.0":
+                                outf.write(str(usage) + "\t" + str(limit) + "\n")
+                                max_usage = return_max_val(max_usage, usage)
                             count_files += 1
 
                     print("max_usage of file: " + infile + " is: " + str(max_usage))
@@ -284,10 +289,10 @@ class ManageStatistics:
             outfolder = self.prefix_vanilla
 
         outfile_abs_slack = outfolder + "absolute-slacks.txt"
-        outfile_rel_slack = outfolder + "relative-slacks.txt"
+        # outfile_rel_slack = outfolder + "relative-slacks.txt"
         directory = os.fsencode(infolder)
         ap_large_abs_slacks = []
-        with open(outfile_abs_slack, "w+") as absf, open(outfile_rel_slack, "w+") as relf:
+        with open(outfile_abs_slack, "w+") as absf: #, open(outfile_rel_slack, "w+") as relf:
             for file in os.listdir(directory):
                 infile = os.fsdecode(file)
                 infile_full_path = infolder + infile
@@ -297,14 +302,16 @@ class ManageStatistics:
                             abs_slack, rel_slack = get_slacks_from_line(line, "\t")
                             if abs_slack == 0:
                                 print("abs slack 0: " + infile_full_path)
+                            if abs_slack > 500000:
+                                print("huge slack here: " + infile_full_path)
                             if system == "ap" or system == "dc-serverless" or system == "vanilla":
                                 if self.resource == "cpu":
-                                    if abs_slack >= 0 and abs_slack < 500000:
+                                    if abs_slack >= 0:# and abs_slack < 500000:
                                         absf.write(str(abs_slack) + "\n")
                                     else:
                                         ap_large_abs_slacks.append(abs_slack)
                                 else:
-                                    if abs_slack >= 0 and abs_slack < 5000 * 1024 * 1024:
+                                    if abs_slack >= 0:# and abs_slack < 5000 * 1024 * 1024:
                                         absf.write(str(abs_slack) + "\n")
                                     else:
                                         ap_large_abs_slacks.append(abs_slack)
@@ -312,8 +319,8 @@ class ManageStatistics:
                             elif abs_slack >= 0:
                                 absf.write(str(abs_slack) + "\n")
 
-                            if rel_slack >= 0:
-                                relf.write(str(rel_slack) + "\n")
+                            # if rel_slack >= 0:
+                            #     relf.write(str(rel_slack) + "\n")
 
 
     def remove_low_usage_containers_static(self):
