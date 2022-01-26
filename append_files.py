@@ -274,12 +274,12 @@ class ManageStatistics:
                                 print("abs slack 0: " + infile_full_path)
                             if system == "ap":
                                 if self.resource == "cpu":
-                                    if abs_slack >= 0 and abs_slack < 500000:
+                                    if abs_slack >= 0:# and abs_slack < 500000:
                                         absf.write(str(abs_slack) + "\n")
                                     else:
                                         ap_large_abs_slacks.append(abs_slack)
                                 else:
-                                    if abs_slack >= 0 and abs_slack < 5000 * 1024 * 1024:
+                                    if abs_slack >= 0:# and abs_slack < 5000 * 1024 * 1024:
                                         absf.write(str(abs_slack) + "\n")
                                     else:
                                         ap_large_abs_slacks.append(abs_slack)
@@ -671,8 +671,8 @@ class ManageStatistics:
 
         else:
             fig, ax = plt.subplots(figsize=(5,3))
-            if self.resource == "cpu":
-                ax.set_xlim([-.25,4])
+            # if self.resource == "cpu":
+            #     ax.set_xlim([-.25,4])
             # ax.plot(data_sorted_dc_absolute_alloc, p_dc_absolute_alloc, label=self.sysname + "-1.0x", marker='*',
             #         markevery=market_freq_dc_limit)
             ax.plot(data_sorted_dc_absolute, p_dc_absolute, label=self.sysname, marker='+',
