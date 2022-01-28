@@ -229,7 +229,7 @@ class ManageStatistics:
         if self.service == "grid-search":
             num_data_files = 1
         else:
-            num_data_files = 4
+            num_data_files = 1
         for i in range(num_data_files):
             infolder = infolders + str(i + 2) + "/" + self.resource + "_limits/"
             print("in folder: " + infolder)
