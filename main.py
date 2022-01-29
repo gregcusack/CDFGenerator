@@ -11,7 +11,8 @@ np.set_printoptions(threshold=sys.maxsize)
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    cold_start_file = "/home/greg/kernel/Distributed-Containers/testing/cold-starts/cold-starts.txt"
+    # cold_start_file = "/home/greg/kernel/Distributed-Containers/testing/cold-starts/cold-starts.txt"
+    cold_start_file = "/Users/gcusack/Desktop/Distributed-Containers/testing/cold-starts/cold-starts.txt"
 
     cold_starts = np.loadtxt(cold_start_file)
 
@@ -29,10 +30,13 @@ if __name__ == '__main__':
     # fig, ax = plt.subplots(figsize=(5, 3))
     fig = plt.figure(figsize=(6, 3))
     ax1 = fig.add_subplot(111)
-    ax1.plot(cold_starts_sorted, p_cold_starts, marker='+', markevery=20)
+    ax1.plot(cold_starts_sorted, p_cold_starts, marker='+', markevery=10)
 
 
     ax1.set_xlabel('Per-Container Connection to Controller Overhead (ms)')
     ax1.set_ylabel('')
     plt.tight_layout()
+
+    filename = "escra-controller-connect-overhead.pdf"
+    fig.savefig(filename)
     fig.show()
