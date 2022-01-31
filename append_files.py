@@ -3,6 +3,7 @@ from itertools import islice
 import matplotlib.pyplot as plt
 import matplotlib.markers as mrk
 import numpy as np
+from statistics import mean
 np.set_printoptions(threshold=sys.maxsize)
 
 def get_absolute_slack(limit, usage):
@@ -105,7 +106,7 @@ def return_max_val(prev_max, new_val):
 
 
 class ManageStatistics:
-    def __init__(self, service_, measurement_, resource_, load_type, multiplier_=0, rel_slack_="no"):
+    def __init__(self, service_, measurement_, resource_, load_type, multiplier_, rel_slack_, percentage_, ap_vs_dc_slack_results, static_vs_dc_slack_results):
         self.service = service_
         self.measurement = measurement_
         self.resource = resource_
@@ -113,11 +114,14 @@ class ManageStatistics:
         self.multiplier = str(multiplier_)
         self.rel_slack = rel_slack_
         self.sysname = "Escra"
+        self.percentage = percentage_
+        self.ap_vs_dc_slack_results = ap_vs_dc_slack_results
+        self.static_vs_dc_slack_results = static_vs_dc_slack_results
 
-        print("multiplier: " + self.multiplier)
+        # print("multiplier: " + self.multiplier)
 
-        base = "/home/greg/Desktop/"
-        # base = "/Users/gcusack/Desktop/"
+        # base = "/home/greg/Desktop/"
+        base = "/Users/gcusack/Desktop/"
 
         if self.multiplier == str(-1):
             multiplier = "1.5"
@@ -547,9 +551,12 @@ class ManageStatistics:
 
     def run_all(self):
 
+
+
+
         """ DC ABSOLUTE ALLOC """
         dc_absolute_slack_path_alloc = self.prefix_dc_alloc + self.abs_slack_file
-        print("dc_abs_slack_file: " + dc_absolute_slack_path_alloc)
+        # print("dc_abs_slack_file: " + dc_absolute_slack_path_alloc)
         dc_absolute_slack_alloc = np.loadtxt(dc_absolute_slack_path_alloc)
         data_sorted_dc_absolute_alloc = np.sort(dc_absolute_slack_alloc)
         if self.resource == "cpu":
@@ -560,33 +567,33 @@ class ManageStatistics:
 
         """ DC RELATIVE ALLOC """
         dc_relative_slack_path_alloc = self.prefix_dc_alloc + self.rel_slack_file
-        print("dc_rel_slack_file: " + dc_relative_slack_path_alloc)
+        # print("dc_rel_slack_file: " + dc_relative_slack_path_alloc)
         dc_relative_slack_alloc = np.loadtxt(dc_relative_slack_path_alloc)
         data_sorted_dc_relative_alloc = np.sort(dc_relative_slack_alloc)  # / 1000 #convert to ms
         p_dc_relative_alloc = 1. * np.arange(len(dc_relative_slack_alloc)) / (len(dc_relative_slack_alloc) - 1)
 
         """ STATIC ABSOLUTE """
         static_absolute_slack_path = self.prefix_static + self.abs_slack_file
-        print("static_abs_slack_file: " + static_absolute_slack_path)
+        # print("static_abs_slack_file: " + static_absolute_slack_path)
         static_absolute_slack = np.loadtxt(static_absolute_slack_path)
         data_sorted_static_absolute = np.sort(static_absolute_slack)
         if self.resource == "cpu":
             data_sorted_static_absolute = data_sorted_static_absolute / 1000 / 100 # us -> ms -> cores
-            print(data_sorted_static_absolute)
+            # print(data_sorted_static_absolute)
         elif self.resource == "mem":
             data_sorted_static_absolute = data_sorted_static_absolute / 1024 / 1024 # bytes to MiB
         p_static_absolute = 1. * np.arange(len(static_absolute_slack)) / (len(static_absolute_slack) - 1)
 
         """ STATIC RELATIVE """
         static_relative_slack_path = self.prefix_static + self.rel_slack_file
-        print("static_rel_slack_file: " + static_relative_slack_path)
+        # print("static_rel_slack_file: " + static_relative_slack_path)
         static_relative_slack = np.loadtxt(static_relative_slack_path)
         data_sorted_static_relative = np.sort(static_relative_slack)  # / 1000 #convert to ms
         p_static_relative = 1. * np.arange(len(static_relative_slack)) / (len(static_relative_slack) - 1)
 
         """ AP ABSOLUTE """
         ap_absolute_slack_path = self.prefix_ap + self.abs_slack_file
-        print("ap_abs_slack_file: " + ap_absolute_slack_path)
+        # print("ap_abs_slack_file: " + ap_absolute_slack_path)
         ap_absolute_slack = np.loadtxt(ap_absolute_slack_path)
         data_sorted_ap_absolute = np.sort(ap_absolute_slack)
         if self.resource == "cpu":
@@ -597,14 +604,14 @@ class ManageStatistics:
 
         """ AP RELATIVE """
         ap_relative_slack_path = self.prefix_ap + self.rel_slack_file
-        print("ap_rel_slack_file: " + ap_relative_slack_path)
+        # print("ap_rel_slack_file: " + ap_relative_slack_path)
         ap_relative_slack = np.loadtxt(ap_relative_slack_path)
         data_sorted_ap_relative = np.sort(ap_relative_slack)  # / 1000 #convert to ms
         p_ap_relative = 1. * np.arange(len(ap_relative_slack)) / (len(ap_relative_slack) - 1)
 
         """ DC ABSOLUTE """
         dc_absolute_slack_path = self.prefix_dc + self.abs_slack_file
-        print("dc_abs_slack_file: " + dc_absolute_slack_path)
+        # print("dc_abs_slack_file: " + dc_absolute_slack_path)
         dc_absolute_slack = np.loadtxt(dc_absolute_slack_path)
         data_sorted_dc_absolute = np.sort(dc_absolute_slack)
         if self.resource == "cpu":
@@ -615,121 +622,82 @@ class ManageStatistics:
 
         """ DC RELATIVE """
         dc_relative_slack_path = self.prefix_dc + self.rel_slack_file
-        print("dc_rel_slack_file: " + dc_relative_slack_path)
+        # print("dc_rel_slack_file: " + dc_relative_slack_path)
         dc_relative_slack = np.loadtxt(dc_relative_slack_path)
         data_sorted_dc_relative = np.sort(dc_relative_slack)  # / 1000 #convert to ms
         p_dc_relative = 1. * np.arange(len(dc_relative_slack)) / (len(dc_relative_slack) - 1)
 
-        xaxis_label = ""
-        marker_freq = 100
-        if self.resource == "cpu":
-            xaxis_label = "Absolute Slack (cores)"
-            marker_freq = 200
-            marker_freq_dc = marker_freq * 10
-            market_freq_dc_limit = marker_freq * 4
-            marker_freq_ap = 100
-        if self.resource == "mem":
-            xaxis_label = "Absolute Slack (MiB)"
-            marker_freq = 200
-            marker_freq_dc = 100
-            market_freq_dc_limit = marker_freq
-            marker_freq_ap = 100
 
-        if self.rel_slack == "yes":
-            fig = plt.figure()
-            # fig, axs = plt.subplot(1, 2)
-            # axs[0,0]
+        # len_slacks = data_sorted_dc_absolute
+        # print(p_dc_absolute)
+        count_dc = 0
+        count_ap = 0
+        count_static = 0
+        val = self.percentage
+        val_up = val + .005
+        # print("-----------------")
+        for i in p_dc_absolute:
+            if i > val and i < val_up:
+                # print(count_dc)
+                break
+            count_dc += 1
 
-            ax1 = fig.add_subplot(211)
-            ax1.plot(data_sorted_dc_absolute_alloc, p_dc_absolute_alloc, label=self.sysname + "-1.0x", marker='*',
-                     markevery=marker_freq_dc)
-            ax1.plot(data_sorted_ap_absolute, p_ap_absolute, label="Autopilot", marker=mrk.TICKRIGHT,
-                     markevery=marker_freq)
-            ax1.plot(data_sorted_dc_absolute, p_dc_absolute, label=self.sysname + "-nolimit", marker='+',
-                     markevery=marker_freq)
-            ax1.plot(data_sorted_static_absolute, p_static_absolute, label="Static-1.0x", marker='x',
-                     markevery=marker_freq)
+        # print("%%%%%%%%%%%%%%%")
+        for i in p_ap_absolute:
+            if i > val and i < val_up:
+                # print(count_ap)
+                break
+            count_ap += 1
+        # print("##############")
+        for i in p_static_absolute:
+            if i > val and i < val_up:
+                # print(count_static)
+                break
+            count_static += 1
 
-            ax1.set_xlabel(xaxis_label)
+        dc = data_sorted_dc_absolute[count_dc]
+        ap = data_sorted_ap_absolute[count_ap]
+        static = data_sorted_static_absolute[count_static]
+        # print(data_sorted_dc_absolute[count_dc])
+        # print(data_sorted_ap_absolute[count_ap])
+        # print(data_sorted_static_absolute[count_static])
 
-            ax1.set_ylabel('')
 
-            ax2 = fig.add_subplot(212)
-            ax2.plot(data_sorted_dc_relative_alloc, p_dc_relative_alloc, label=self.sysname + "-1.0x", marker='*',
-                     markevery=marker_freq)
-            ax2.plot(data_sorted_ap_relative, p_ap_relative, label="Autopilot", marker=mrk.TICKRIGHT,
-                     markevery=marker_freq)
-            ax2.plot(data_sorted_dc_relative, p_dc_relative, label=self.sysname + "-nolimit", marker='+', markevery=marker_freq)
-            ax2.plot(data_sorted_static_relative, p_static_relative, label="Static-1.0x", marker='x', markevery=marker_freq)
+        slack_ap = data_sorted_ap_absolute[count_ap]
+        slack_dc = data_sorted_dc_absolute[count_dc]
+        slack_static = data_sorted_static_absolute[count_static]
 
-            # ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-            ax1.legend()
+        dc_ap_slack_decr = (slack_ap - slack_dc)/slack_ap * 100
+        dc_static_slack_decr = (slack_static - slack_dc)/slack_static * 100
 
-            ax2.set_xlabel('Relative Slack')
-            ax2.set_ylabel('')
-            plt.tight_layout()
-
-        else:
-            fig, ax = plt.subplots(figsize=(5,3))
-            # if self.resource == "cpu":
-            #     ax.set_xlim([-.25,4])
-            # ax.plot(data_sorted_dc_absolute_alloc, p_dc_absolute_alloc, label=self.sysname + "-1.0x", marker='*',
-            #         markevery=market_freq_dc_limit)
-            ax.plot(data_sorted_dc_absolute, p_dc_absolute, label=self.sysname, marker='+',
-                    markevery=marker_freq_dc)
-            ax.plot(data_sorted_ap_absolute, p_ap_absolute, label="Autopilot", marker=mrk.TICKRIGHT,
-                    markevery=marker_freq_ap)
-            ax.plot(data_sorted_static_absolute, p_static_absolute, label="Static", marker='x', markevery=marker_freq)
-
-            # print(p_dc_absolute)
-            count_dc = 0
-            count_ap = 0
-            count_static = 0
-            val = .70
-            val_up = val + .005
-            print("-----------------")
-            for i in p_dc_absolute:
-                if i > val and i < val_up:
-                    print(count_dc)
-                    break
-                count_dc += 1
-
-            print("%%%%%%%%%%%%%%%")
-            for i in p_ap_absolute:
-                if i > val and i < val_up:
-                    print(count_ap)
-                    break
-                count_ap += 1
-            print("##############")
-            for i in p_static_absolute:
-                if i > val and i < val_up:
-                    print(count_static)
-                    break
-                count_static += 1
-
-            dc = data_sorted_dc_absolute[count_dc]
-            ap = data_sorted_ap_absolute[count_ap]
-            static = data_sorted_static_absolute[count_static]
-            print(data_sorted_dc_absolute[count_dc])
-            print(data_sorted_ap_absolute[count_ap])
-            print(data_sorted_static_absolute[count_static])
-
-            out_x = ap/dc
-            out_per = (ap - dc) / ap
-            print(out_per, out_x)
+        dc_ap_slack_times_smaller = slack_ap/slack_dc
 
 
 
-            ax.set_xlabel(xaxis_label)
-            ax.set_ylabel('')
-            plt.tight_layout()
-            ax.legend(title=self.load_type.capitalize() + " Workload")
+        # print("ap vs dc. " + self.service + "," + self.load_type + "," + self.resource + ": " + str(dc_ap_slack_decr))
+        # print("static vs dc. " + self.service + "," + self.load_type + "," + self.resource + ": " + str(dc_static_slack_decr))
+
+        self.ap_vs_dc_slack_results.append(dc_ap_slack_decr)
+        self.static_vs_dc_slack_results.append(dc_static_slack_decr)
+
+        # if dc_ap_slack_decr <= 0:
+        #     print(dc_ap_slack_decr)
+
+        # print(self.ap_vs_dc_slack_results)
+        # print(self.static_vs_dc_slack_results)
+        if len(self.ap_vs_dc_slack_results) == 16:
+            print("mean ap_vs_dc_slack " + str(self.percentage*100) + "% -> " + self.resource + ": " + str(mean(self.ap_vs_dc_slack_results)))
+        if len(self.static_vs_dc_slack_results) == 16:
+            print("mean static_vs_dc_slack " + str(self.percentage*100) + "% -> " + self.resource + ": " + str(
+                mean(self.static_vs_dc_slack_results)))
+
+        if len(self.ap_vs_dc_slack_results) == 16:
+            print("max ap_vs_dc_slack " + str(self.percentage*100) + "% -> " + self.resource + ": " + str(mean(self.ap_vs_dc_slack_results)))
+        if len(self.static_vs_dc_slack_results) == 16:
+            print("max static_vs_dc_slack " + str(self.percentage*100) + "% -> " + self.resource + ": " + str(
+                mean(self.static_vs_dc_slack_results)))
+            print("times smaller (" + self.resource + "): " + str(dc_ap_slack_times_smaller))
 
 
-        fig.show()
 
-        filename = self.prefix_dc[:-1] + "-plot-" + self.load_type + "-" + self.resource + "-DC-AP-Static" + ".pdf"
-        fig.savefig(filename)
-        filename = self.prefix_dc[:-1] + "-plot-" + self.load_type + "-" + self.resource + "-DC-AP-Static" + ".png"
-        fig.savefig(filename)
 

@@ -22,59 +22,19 @@ if __name__ == '__main__':
         except:
             multiplier = float(sys.argv[6])
 
-
-    manageStats = ManageStatistics(service, measurement, resource, load_type, multiplier, rel_slack)
-
-
-    if multiplier == -1: #plot everything on same graph
-        manageStats.run_all()
-
-    elif multiplier != 0:
-        if resource == "cpu":
-            """ DC STUFF """
-            manageStats.aggregate_per_period_to_per_second()
-            manageStats.aggregate_into_one_file()
-
-            """ STATIC """
-            manageStats.remove_low_usage_containers_static()
-            manageStats.aggregate_into_one_file_static()
+    resources = ["cpu", "mem"]
+    managers = ["dc", "ap"]
+    apps = ["media-microsvc", "hipster-shop", "train-ticket", "teastore"]
+    workloads = ["alibaba", "burst", "exp", "fixed"]
+    percentages = [0.5, 0.99]
 
 
-        elif resource == "mem":
-            manageStats.remove_low_usage_containers("dc")
-            manageStats.aggregate_into_one_file_autopilot("dc")
+    for resource in resources:
+        for percentage in percentages:
+            ap_vs_dc_slack_results = []
+            static_vs_dc_slack_results = []
+            for app in apps:
+                for workload in workloads:
+                    manageStats = ManageStatistics(app, "slack", resource, workload, -1, "no", percentage, ap_vs_dc_slack_results, static_vs_dc_slack_results)
+                    manageStats.run_all()
 
-            print("################################## DC Stuff DONE #################################")
-
-
-            manageStats.remove_low_usage_containers("static")
-            manageStats.aggregate_into_one_file_autopilot("static")
-
-        manageStats.run_static()
-
-    else:
-        if resource == "cpu":
-            """ DC STUFF """
-            manageStats.aggregate_per_period_to_per_second()
-            manageStats.aggregate_into_one_file()
-
-            """ AUTOPILOT STUFF """
-            manageStats.remove_low_usage_containers("ap")
-            manageStats.aggregate_into_one_file_autopilot("ap")
-
-        elif resource == "mem":
-            manageStats.remove_low_usage_containers("dc")
-            manageStats.aggregate_into_one_file_autopilot("dc")
-
-            manageStats.remove_low_usage_containers("ap")
-            manageStats.aggregate_into_one_file_autopilot("ap")
-
-        """ PLOT """
-        manageStats.run()
-
-    # agg_file_folder = manageStats.aggregate_per_period_to_per_second_autopilot()
-    # manageStats.aggregate_into_one_file_autopilot(agg_file_folder)
-
-    # run(measurement, resource, load_type, duration, system)
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
