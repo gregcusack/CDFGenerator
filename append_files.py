@@ -624,16 +624,16 @@ class ManageStatistics:
         marker_freq = 100
         if self.resource == "cpu":
             xaxis_label = "Absolute Slack (cores)"
-            marker_freq = 50
-            marker_freq_dc = marker_freq * 10
+            marker_freq = 300
+            marker_freq_dc = marker_freq * 4
             market_freq_dc_limit = marker_freq * 4
-            marker_freq_ap = 40
+            marker_freq_ap = 150
         if self.resource == "mem":
             xaxis_label = "Absolute Slack (MiB)"
-            marker_freq = 100
-            marker_freq_dc = 50
+            marker_freq = 300
+            marker_freq_dc = 300
             market_freq_dc_limit = marker_freq
-            marker_freq_ap = 70
+            marker_freq_ap = 340
 
         if self.rel_slack == "yes":
             fig = plt.figure()
@@ -670,7 +670,7 @@ class ManageStatistics:
             plt.tight_layout()
 
         else:
-            fig, ax = plt.subplots(figsize=(5,3))
+            fig, ax = plt.subplots(figsize=(5,2.2))
             # if self.resource == "cpu":
             #     ax.set_xlim([-.25,4])
             # ax.plot(data_sorted_dc_absolute_alloc, p_dc_absolute_alloc, label=self.sysname + "-1.0x", marker='*',
@@ -680,6 +680,7 @@ class ManageStatistics:
             ax.plot(data_sorted_ap_absolute, p_ap_absolute, label="Autopilot", marker=mrk.TICKRIGHT,
                     markevery=marker_freq_ap, zorder=5)
             ax.plot(data_sorted_static_absolute, p_static_absolute, label="Static", marker='x', markevery=marker_freq)
+            plt.subplots_adjust(bottom=.2, top=.96, left=.07, right=.99)
 
             # print(p_dc_absolute)
             count_dc = 0
@@ -722,8 +723,8 @@ class ManageStatistics:
 
             ax.set_xlabel(xaxis_label)
             ax.set_ylabel('')
-            plt.tight_layout()
-            ax.legend(title=self.service.capitalize() + "Appl. \n" + self.load_type.capitalize() + " Workload")
+            # plt.tight_layout()
+            ax.legend(title=self.service.capitalize() + " Appl. \n" + self.load_type.capitalize() + " Workload")
 
 
         fig.show()
