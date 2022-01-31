@@ -116,8 +116,8 @@ class ManageStatistics:
 
         print("multiplier: " + self.multiplier)
 
-        base = "/home/greg/Desktop/"
-        # base = "/Users/gcusack/Desktop/"
+        # base = "/home/greg/Desktop/"
+        base = "/Users/gcusack/Desktop/"
 
         if self.multiplier == str(-1):
             multiplier = "1.5"
@@ -624,16 +624,16 @@ class ManageStatistics:
         marker_freq = 100
         if self.resource == "cpu":
             xaxis_label = "Absolute Slack (cores)"
-            marker_freq = 200
+            marker_freq = 50
             marker_freq_dc = marker_freq * 10
             market_freq_dc_limit = marker_freq * 4
-            marker_freq_ap = 100
+            marker_freq_ap = 40
         if self.resource == "mem":
             xaxis_label = "Absolute Slack (MiB)"
-            marker_freq = 200
-            marker_freq_dc = 100
+            marker_freq = 100
+            marker_freq_dc = 50
             market_freq_dc_limit = marker_freq
-            marker_freq_ap = 100
+            marker_freq_ap = 70
 
         if self.rel_slack == "yes":
             fig = plt.figure()
@@ -676,16 +676,16 @@ class ManageStatistics:
             # ax.plot(data_sorted_dc_absolute_alloc, p_dc_absolute_alloc, label=self.sysname + "-1.0x", marker='*',
             #         markevery=market_freq_dc_limit)
             ax.plot(data_sorted_dc_absolute, p_dc_absolute, label=self.sysname, marker='+',
-                    markevery=marker_freq_dc)
+                    markevery=marker_freq_dc, zorder=10)
             ax.plot(data_sorted_ap_absolute, p_ap_absolute, label="Autopilot", marker=mrk.TICKRIGHT,
-                    markevery=marker_freq_ap)
+                    markevery=marker_freq_ap, zorder=5)
             ax.plot(data_sorted_static_absolute, p_static_absolute, label="Static", marker='x', markevery=marker_freq)
 
             # print(p_dc_absolute)
             count_dc = 0
             count_ap = 0
             count_static = 0
-            val = .70
+            val = .5
             val_up = val + .005
             print("-----------------")
             for i in p_dc_absolute:
@@ -723,7 +723,7 @@ class ManageStatistics:
             ax.set_xlabel(xaxis_label)
             ax.set_ylabel('')
             plt.tight_layout()
-            ax.legend(title=self.load_type.capitalize() + " Workload")
+            ax.legend(title=self.service.capitalize() + "Appl. \n" + self.load_type.capitalize() + " Workload")
 
 
         fig.show()
